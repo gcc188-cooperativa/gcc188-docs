@@ -41,7 +41,6 @@ Para encerrar: `scripts/down.sh dev` (preserva os dados) ou `scripts/reset-dev.s
 
 ```bash
 git clone https://github.com/gcc188-cooperativa/gcc188-backend.git && cd gcc188-backend
-gradle wrapper --gradle-version 9.1.0
 docker run -d --name pg -e POSTGRES_DB=cooperativa -e POSTGRES_USER=cooperativa \
   -e POSTGRES_PASSWORD=cooperativa -p 5432:5432 postgres:17
 SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
@@ -59,7 +58,7 @@ npm ci && npm run mock     # Prism em http://127.0.0.1:4010
 | Repositório | Preparo | Verificações | Execução |
 |---|---|---|---|
 | `gcc188-api-contract` | `npm ci` (instala os ganchos lefthook) | `npm run lint` (Spectral + Redocly + Prettier), `npm run mock:smoke` | `npm run mock` (Prism) |
-| `gcc188-backend` | `npm ci`; `gradle wrapper --gradle-version 9.1.0` | `./gradlew test` (Testcontainers: exige Docker) | `SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun` |
+| `gcc188-backend` | `npm ci` | `./gradlew test` (Testcontainers: exige Docker) | `SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun` |
 | `gcc188-front` | reservado para a próxima sprint | — | `npm run dev:mock` (MSW) |
 | `gcc188-infra` | `npm ci` | `yamllint`, `shellcheck`, `hadolint` (nos ganchos) | `scripts/up.sh dev` |
 | `gcc188-docs` | Typst para recompilar os PDFs | — | — |

@@ -1,0 +1,5 @@
+# Ganchos locais (D33): conveniência para falhar cedo; o CI executa as mesmas verificações.
+commit-msg:
+  commands:
+    commitlint:
+      run: npx --no-install commitlint --edit {1}

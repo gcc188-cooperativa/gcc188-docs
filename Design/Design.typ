@@ -485,7 +485,7 @@ O teste de contrato contra a implementação (Schemathesis) roda no CI do backen
   [Mapeamento], [MapStruct.], [D12. Entidade para DTO e DTO para comando.],
   [Observabilidade], [Actuator, Micrometer e _logs_ estruturados em JSON.], [D15.],
   [Testes], [JUnit Jupiter, AssertJ, Mockito, Spring Security Test, Testcontainers (PostgreSQL), ArchUnit e JaCoCo.], [D20.],
-  [Qualidade], [Spotless (formatação) e Checkstyle (regras básicas).], [Executados no CI e, de forma reduzida, nos ganchos locais.],
+  [Qualidade], [Spotless (google-java-format) e Checkstyle (nomenclatura, Javadoc, tamanho e complexidade; @sec-codificacao).], [Executados no CI e, de forma reduzida, nos ganchos locais.],
   [Imagem], [`bootBuildImage` (Cloud Native Buildpacks), usuário sem privilégio.], [D30. Jib é a alternativa se o tempo de _build_ incomodar.],
 )
 
@@ -519,7 +519,7 @@ br.ufla.cooperativa
 - *Eventos de domínio síncronos* (`ApplicationEventPublisher`), executados dentro da transação de quem publica. Exemplo: ao aprovar um contrato, `contratos` publica `ContratoAprovado`; `pagamentos` gera o cronograma na mesma transação (RF-CTR-04, RNF-05). O cancelamento segue o mesmo caminho (RN06).
 - *Portas* (interfaces definidas no módulo consumidor e implementadas por outro). Exemplo: o encerramento consulta a porta `PendenciasFinanceiras`, declarada em `contratos` e implementada em `pagamentos` (RN06).
 
-#quadro([Regras de arquitetura verificadas com ArchUnit (falham o CI).], (auto, 1fr, auto),
+#quadro([Regras de arquitetura verificadas com ArchUnit (falham o CI; A7 em @sec-codificacao).], (auto, 1fr, auto),
   table.header[*\#*][*Regra*][*Origem*],
   [A1], [`web` não depende de `persistence`.], [RNF-12],
   [A2], [Classes em `web` e `persistence` não contêm lógica de regra de negócio: somente `service` acessa `Clock` e executa transições de estado.], [RNF-12],
@@ -527,6 +527,7 @@ br.ufla.cooperativa
   [A4], [Um módulo só usa classes de outro módulo no pacote `service` (tipos públicos) ou eventos.], [D41],
   [A5], [É proibido `Instant.now()`, `LocalDate.now()` e `System.currentTimeMillis()` sem `Clock`.], [D40],
   [A6], [Entidades JPA não são retornadas por controladores.], [RNF-03],
+  [A7], [Campos, parâmetros e retornos de `service` e `persistence` não usam `double` nem `float` para valores monetários.], [RNF-04, RC06],
 )
 
 == Regras de negócio, transações e concorrência <sec-rn-componentes>
@@ -1114,7 +1115,7 @@ O PHP foi considerado, mas descartado: o backend em Java já concentra regras e 
   [Cliente da API e _mocks_], [Orval (gera _hooks_, esquemas Zod e _handlers_ MSW).], [Entrada: documento do pacote `@ORG/api-contract`.],
   [Formatação], [`Intl` e `dayjs` em `pt-BR`.], [RNF-21.],
   [Testes], [Vitest, Testing Library, MSW e `vitest-axe`.], [D26.],
-  [Qualidade], [ESLint (`typescript-eslint`, `react-hooks`, `jsx-a11y`) e Prettier.], [Executados no CI e nos ganchos locais.],
+  [Qualidade], [ESLint (`typescript-eslint`, `react-hooks`, `jsx-a11y`, `jsdoc`) e Prettier (@sec-codificacao).], [Executados no CI e nos ganchos locais.],
 )
 
 == Organização do código
@@ -1548,6 +1549,150 @@ Os testes ponta a ponta ficam no repositório de infraestrutura porque validam o
 - *Em _release_ publicada:* publicação das imagens com as etiquetas `X.Y.Z` e `X.Y`, além dos rótulos OCI (`org.opencontainers.image.source`, `version` e `revision`), que ligam a imagem ao repositório. O contrato publica os pacotes Maven e npm com a mesma versão.
 - *Atualização de versões:* o Dependabot abre PRs para Gradle, npm, GitHub Actions, Docker e Docker Compose. As versões das imagens em `versions.env` avançam por PR no repositório de infraestrutura, que só passa se o teste ponta a ponta passar.
 - *Cadeia de suprimentos:* varredura de vulnerabilidades da imagem e da árvore de dependências; atestado de proveniência da imagem é recomendável e opcional.
+
+// ───────────────────────── Regras de codificação ─────────────────────────
+= Regras de codificação <sec-codificacao>
+Este capítulo consolida, em um único lugar, as regras de codificação do grupo para o backend (Java) e o front-end (TypeScript). Cada regra tem identificador (RC01 a RC06), vale para os dois repositórios de aplicação salvo indicação em contrário e é *verificada por ferramenta* sempre que possível, para que o cumprimento não dependa da memória de quem revisa (D33, D34). As convenções que já estavam espalhadas pelo projeto (nomes de campos JSON, `operationId`, enumerações, mensagens de _commit_, regras ArchUnit e migrações) são incorporadas aqui por referência. As regras RC01 e RC02 atendem à exigência de padrão de notação e de documentação de código; RC04 e RC05 adotam os princípios SOLID (MARTIN, 2003) e as práticas de _Clean Code_ (MARTIN, 2009).
+
+#quadro([Regras de codificação do grupo.], (auto, 1fr, 1fr, 1fr),
+  table.header[*ID*][*Regra*][*Resumo do que exige*][*Verificação*],
+  [RC01], [Padrão de notação de código (nomenclatura).], [`PascalCase` para tipos, `camelCase` para métodos e variáveis, `UPPER_SNAKE_CASE` para constantes, `snake_case` para banco e JSON; domínio em português, termos técnicos em inglês.], [Checkstyle (`naming`), ESLint (`naming-convention`), Spectral (contrato), revisão.],
+  [RC02], [Documentação e comentários de código.], [Javadoc nos tipos e métodos públicos de serviço e nas regras de negócio; TSDoc nas funções exportadas de `shared`; comentário explica o motivo, não o óbvio; sem código comentado.], [Checkstyle (Javadoc), `eslint-plugin-jsdoc`, Spectral (`description`), revisão.],
+  [RC03], [Formatação e organização do código.], [Formatação automática (google-java-format, Prettier), 2 espaços, 100 colunas, UTF-8 e LF; um tipo público por arquivo; injeção por construtor.], [Spotless, Prettier, `.editorconfig`, ganchos locais e CI.],
+  [RC04], [Princípios SOLID.], [Responsabilidade única, aberto/fechado, substituição de Liskov, segregação de interfaces e inversão de dependência.], [ArchUnit (A1 a A7), revisão de PR com lista de verificação.],
+  [RC05], [Clean Code.], [Nomes reveladores, funções curtas, poucos parâmetros, sem números mágicos, sem `null` desnecessário, exceções em vez de códigos de erro, testes legíveis.], [Checkstyle (tamanho e complexidade), ESLint (`complexity`, `max-params`), revisão.],
+  [RC06], [Regras do domínio no código: dinheiro, tempo, erros e segredos.], [`BigDecimal` com escala 2 e `HALF_UP`; `Clock` injetado; exceções de negócio com `codigo_regra`; nenhum dado pessoal ou segredo em _log_.], [ArchUnit (A5, A7), Checkstyle (`Regexp`), ESLint (`react/no-danger`), testes.],
+)
+
+== RC01: padrão de notação de código <sec-rc01>
+#quadro([Padrão de notação por elemento e linguagem.], (auto, 1fr, 1fr, 1fr),
+  table.header[*Elemento*][*Java*][*TypeScript e React*][*SQL, JSON, YAML*],
+  [Pacotes e diretórios], [Minúsculas, sem sublinhado: `br.ufla.cooperativa.contratos.service`.], [Minúsculas: `features/contratos/pages`.], [Tabelas no singular em `snake_case`: `pagamento`.],
+  [Tipos], [`PascalCase`, com sufixo de papel: `ContratoService`, `UsuarioRepository`, `UsuarioMapper`, `RegraNegocioException`. Sem prefixo `I` em interfaces.], [`PascalCase` para tipos e componentes; componentes em arquivos `PascalCase.tsx`.], [Restrições com prefixo: `ck_`, `uq_`, `ix_`, `fk_`.],
+  [Métodos e funções], [`camelCase` com verbo e objeto: `aprovar`, `registrarBaixa`, `temPendencias`.], [`camelCase`; _hooks_ com prefixo `use`: `useCriarContrato`; manipuladores com `handle` ou `on`.], [`operationId` em `camelCase`: `aprovarContrato`.],
+  [Variáveis e campos], [`camelCase`; booleanos como adjetivo ou pergunta: `ativo`, `deveTrocarSenha`.], [`camelCase`; booleanos com `is`, `has` ou `pode`: `podeAprovar`.], [Colunas e campos JSON em `snake_case`: `taxa_valor` (D38).],
+  [Constantes], [`UPPER_SNAKE_CASE` em `static final`: `ESCALA_MONETARIA`.], [`UPPER_SNAKE_CASE` no módulo: `ACOES_POR_STATUS`.], [—],
+  [Enumerações], [Tipo em `PascalCase`; valores em `UPPER_SNAKE_CASE`: `PENDENTE_APROVACAO`.], [União de literais com os mesmos valores do contrato.], [Valores em maiúsculas, iguais ao banco.],
+  [Testes], [Classe `NomeDaClasseTest`; método `deveXxxQuandoYyy`.], [Arquivo `nome.test.ts(x)`; `it('deve ... quando ...')`.], [—],
+)
+
+*Idioma.* Os termos do domínio seguem o glossário da especificação, em português e sem acentos nos identificadores (`cooperado`, `taxa`, `baixa`, `repasse`, `vencimento`), de modo que o código, o banco, o contrato e os requisitos usem a mesma palavra. Termos técnicos consagrados mantêm o inglês (`Controller`, `Service`, `Repository`, `Specification`, `Clock`). Abreviações só quando conhecidas pela equipe (`id`, `dto`, `cpf`); proíbem-se nomes de uma letra fora de contadores de laço e _lambdas_ curtas, e prefixos como `str` ou `m_`.
+
+== RC02: documentação e comentários de código <sec-rc02>
+- *O que documentar.* Todo tipo público e todo método público das camadas `service` e das classes de regra pura (`TaxaCalculadora`, `CronogramaPagamentos`, `ContratoEstados`, `EscopoDoUsuario`) têm Javadoc que informa o propósito, os parâmetros, o retorno, as exceções (`@throws`) e os identificadores das regras (RN) e requisitos (RF) que implementam. Controladores e DTOs herdam a documentação do contrato OpenAPI e dispensam Javadoc próprio. No front-end, as funções, os _hooks_ e os componentes exportados de `shared/lib`, `shared/permissions` e `shared/ui` têm TSDoc.
+- *Como comentar.* O comentário explica o *porquê* (a regra, a decisão ou a armadilha), nunca repete o que o código já diz; um nome melhor é preferível a um comentário que o explique. Comentários em português, com referência a RN, RF ou D quando existir (por exemplo, `// RN05: o resíduo de arredondamento vai para a última parcela`).
+- *O que não fazer.* Código comentado (o Git guarda o histórico), comentários de autoria ou de data, e `TODO` sem identificador de _issue_ (`TODO(#123): ...`).
+- *Outros artefatos.* Migrações SQL começam com um comentário de objetivo e requisito, e restrições não óbvias são comentadas; cada operação e cada esquema do OpenAPI têm `description` e exemplo (regra Spectral, @sec-verif-contrato); arquivos de Compose e `Caddyfile` comentam as decisões não óbvias; cada repositório tem um `README` com a forma de executar, testar e contribuir.
+
+#codigo([Exemplo ilustrativo de RC01, RC02, RC05 e RC06 em Java: regra pura de cálculo da taxa (RN02, RN03).], ```java
+/**
+ * Calcula a taxa retida pela cooperativa sobre um pagamento (RN03).
+ *
+ * <p>Classe sem estado e sem acesso a banco ou a HTTP: a regra é testável
+ * apenas com valores {@link BigDecimal}.
+ */
+public final class TaxaCalculadora {
+
+  private static final BigDecimal CEM = BigDecimal.valueOf(100);
+  private static final int ESCALA_MONETARIA = 2;
+
+  private TaxaCalculadora() {}
+
+  /**
+   * @param valorBruto valor cobrado do cliente na parcela; maior que zero
+   * @param tipo PERCENTUAL ou FIXO (RN02)
+   * @param taxaValor percentual em (0, 100] ou valor fixo em reais por pagamento
+   * @return a taxa, com duas casas e arredondamento HALF_UP (D40)
+   * @throws RegraNegocioException com código RN03 se a taxa exceder o valor bruto
+   */
+  public static BigDecimal calcular(BigDecimal valorBruto, TaxaTipo tipo, BigDecimal taxaValor) {
+    BigDecimal taxa =
+        switch (tipo) {
+          case PERCENTUAL ->
+              valorBruto.multiply(taxaValor).divide(CEM, ESCALA_MONETARIA, RoundingMode.HALF_UP);
+          case FIXO -> taxaValor.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+        };
+    if (taxa.compareTo(valorBruto) > 0) {
+      throw new RegraNegocioException("RN03", "taxa_valor", "A taxa não pode exceder o valor bruto.");
+    }
+    return taxa;
+  }
+}
+```)
+
+#codigo([Exemplo ilustrativo de RC01, RC02 e RC04 em TypeScript: ações visíveis do contrato (RN12, RF-WEB-05).], ```ts
+const ACOES_POR_STATUS: Record<StatusContrato, AcaoContrato[]> = {
+  RASCUNHO: ['editar', 'submeter', 'excluir', 'cancelar'],
+  PENDENTE_APROVACAO: ['aprovar', 'reprovar', 'cancelar'],
+  ATIVO: ['encerrar', 'cancelar'],
+  ENCERRADO: [],
+  CANCELADO: [],
+};
+
+/**
+ * Ações de transição exibidas no detalhe do contrato (RN12).
+ *
+ * Função pura: não chama a API. A API continua sendo a autoridade de
+ * autorização (RNF-03); aqui só se evita mostrar o que seria negado.
+ */
+export function acoesDisponiveis(contrato: Contrato, papel: Papel): AcaoContrato[] {
+  return ACOES_POR_STATUS[contrato.status].filter((acao) => PERMISSOES[acao].includes(papel));
+}
+```)
+
+== RC03: formatação e organização do código
+- *Formatação automática, sem discussão de estilo em revisão.* Java: Spotless com google-java-format (GOOGLE, [s. d.]), com recuo de 2 espaços, 100 colunas e _imports_ ordenados e sem curinga. TypeScript: Prettier com 2 espaços, aspas simples, ponto e vírgula e 100 colunas. Todos os arquivos em UTF-8, com fim de linha LF e nova linha final, definidos em `.editorconfig`.
+- *Organização.* Um tipo público por arquivo. Ordem dos membros de uma classe: constantes, campos, construtores, métodos públicos, métodos privados. Colaboradores recebidos por *injeção por construtor*, em campos `final`; sem injeção em campo (`@Autowired` em atributo).
+- *Importações e dependências.* Sem dependências circulares (A3); `shared` não depende de módulos de negócio; no front-end, `features` não importam umas das outras.
+- *Verificação.* `spotlessCheck` e `prettier --check` no CI e, nos arquivos alterados, no gancho de _commit_ (@sec-ci).
+
+== RC04: princípios SOLID <sec-rc04>
+Os princípios SOLID (MARTIN, 2003) orientam o desenho das classes. A aplicação é proporcional ao porte do sistema: não se criam abstrações sem um segundo uso ou sem necessidade de teste.
+
+#quadro([Aplicação dos princípios SOLID.], (auto, 1fr, 1fr),
+  table.header[*Princípio*][*Como é aplicado*][*Exemplos no projeto*],
+  [Responsabilidade única (SRP)], [Cada classe tem um único motivo para mudar. Cálculo, estado, escopo e orquestração ficam em classes diferentes; controladores só traduzem HTTP.], [`TaxaCalculadora`, `CronogramaPagamentos`, `ContratoEstados` e `EscopoDoUsuario` separados de `ContratoService`; regras A1 e A2 do ArchUnit.],
+  [Aberto/fechado (OCP)], [Comportamento que cresce é dado em tabelas ou em tipos novos, e não em novos `if` em cascata.], [Mapa de transições de `ContratoEstados`; `ACOES_POR_STATUS` e `PERMISSOES` no front; nova exceção estende `ApiException` sem alterar o tratador (@fig-heranca-excecoes).],
+  [Substituição de Liskov (LSP)], [Quem implementa uma interface respeita seus pré e pós-condições e as exceções documentadas.], [Qualquer implementação de `PendenciasFinanceiras` ou de `PoliticaDeSenha`; subclasses de `ApiException` tratadas de modo uniforme.],
+  [Segregação de interfaces (ISP)], [Interfaces pequenas e coesas, de acordo com quem as usa.], [Uma interface gerada por _tag_ do contrato (`UsuariosApi`, `ContratosApi`); portas de uma única operação (`PendenciasFinanceiras`).],
+  [Inversão de dependência (DIP)], [Serviços dependem de abstrações injetadas, e não de classes concretas ou de recursos globais.], [`ContratoService` recebe repositórios, portas, `Clock` e `ApplicationEventPublisher`; eventos de domínio entre módulos (D41); regra A5 (sem `LocalDate.now()`).],
+)
+
+== RC05: práticas de _Clean Code_ <sec-rc05>
+As práticas seguem Martin (2009) e são verificadas, quando possível, por limites numéricos que a equipe pode ajustar na primeira _sprint_ de implementação (PD17).
+
+- *Nomes que revelam a intenção*, pronunciáveis e pesquisáveis (RC01).
+- *Funções pequenas que fazem uma coisa*: no máximo 30 linhas, 4 parâmetros (acima disso, usa-se um objeto-comando, como `CriarContratoComando`) e complexidade ciclomática 10 (Checkstyle: `MethodLength`, `ParameterNumber`, `CyclomaticComplexity`; ESLint: `max-lines-per-function`, `max-params`, `complexity`).
+- *Retorno antecipado* (_guard clauses_) e no máximo dois níveis de aninhamento.
+- *Sem números ou textos mágicos*: constantes nomeadas ou enumerações (`ESCALA_MONETARIA`, `CEM`).
+- *Evitar `null`*: `Optional` em retornos de busca; no TypeScript, modo estrito e proibição de `any` (`no-explicit-any`).
+- *Sem parâmetros booleanos que mudam o comportamento*: métodos separados (`inativar()` e `reativar()`, em vez de `alterar(ativo)`) onde o ganho de clareza compensa; o recurso da API `PATCH /situacao` recebe o booleano por ser parte do contrato.
+- *Exceções em vez de códigos de erro*; nunca `catch` vazio nem `catch (Exception)` genérico fora do tratador global; mensagens que dizem o que fazer.
+- *Sem duplicação de regra*: uma regra de negócio existe em um só lugar. Abstrai-se a partir da terceira repetição.
+- *Testes limpos*: rápidos, independentes, repetíveis, autovalidáveis e escritos junto com o código; estrutura _arrange–act–assert_; um conceito por teste; nome `deveXxxQuandoYyy`.
+- *Regra do escoteiro*: deixar o código um pouco melhor do que estava, com refatorações em _commits_ `refactor` separados das mudanças de comportamento.
+
+== RC06: regras do domínio no código
+- *Dinheiro:* `BigDecimal` com escala 2 e `RoundingMode.HALF_UP` (D40); `double` e `float` são proibidos nas camadas `service` e `persistence` (regra A7).
+- *Tempo:* sempre por `Clock` injetado (A5); `Instant` para instantes e `LocalDate` para datas de negócio.
+- *Erros:* regra de negócio violada lança subclasse de `ApiException` com `codigo_regra` (@fig-heranca-excecoes); exceção não é usada para controle de fluxo normal.
+- *Imutabilidade:* DTOs, comandos e eventos são `record`; campos `final` sempre que possível; entidades JPA nunca saem do controlador (A6).
+- *Privacidade e segurança:* nenhum dado pessoal, senha ou _token_ em _log_ (RNF-25); consultas sempre parametrizadas; no front-end, sem `dangerouslySetInnerHTML` (`react/no-danger`).
+
+== Verificação das regras
+#quadro([Ferramentas que aplicam as regras de codificação.], (auto, 1fr, auto, auto),
+  table.header[*Ferramenta*][*Regras cobertas*][*Momento*][*Bloqueia?*],
+  [Spotless (google-java-format) e Prettier], [RC03], [Gancho de _commit_ e CI], [Sim],
+  [Checkstyle (`naming`, Javadoc, tamanho, complexidade, `Regexp`)], [RC01, RC02, RC05, RC06], [CI], [Sim],
+  [ESLint (`typescript-eslint`, `jsdoc`, `react-hooks`, `jsx-a11y`)], [RC01, RC02, RC05, RC06], [Gancho de _commit_ e CI], [Sim],
+  [ArchUnit (A1 a A7)], [RC04, RC06], [CI], [Sim],
+  [Spectral (contrato)], [RC01, RC02], [CI do contrato], [Sim],
+  [commitlint], [Mensagens de _commit_], [Gancho e CI], [Sim],
+  [Revisão de PR], [RC01 a RC06 (o que a ferramenta não alcança)], [PR], [Sim: um revisor que não seja o autor],
+)
+
+A revisão de PR usa uma lista curta de verificação: o nome revela a intenção; há teste para cada regra tocada; a regra de negócio está só na camada de serviço; não há código comentado nem `TODO` sem _issue_; a documentação (Javadoc, TSDoc ou OpenAPI) foi atualizada. Os valores dos limites de RC05 e o uso do google-java-format são premissas a confirmar (PD17).
+
 
 // ───────────────────────── 11. Segurança ─────────────────────────
 = Segurança: visão consolidada

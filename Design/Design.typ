@@ -597,6 +597,294 @@ O backend segue o fator III dos 12 fatores (WIGGINS, 2017): configuração por a
   [`app.timezone`], [Fuso de negócio (`America/Sao_Paulo`).], [Variável],
 )
 
+// ───────────────────────── Diagramas de pacotes e de classes ─────────────────────────
+= Diagramas de pacotes e de classes <sec-classes>
+Este capítulo apresenta a *visão estática* do sistema em UML (OBJECT MANAGEMENT GROUP, 2017): diagramas de pacotes (organização e dependências entre os módulos do backend, do front-end e das três partes que se comunicam) e diagramas de classes (modelo de domínio, hierarquias de herança e as classes de projeto dos módulos que implementam os CRUDs). Os diagramas são desenhados em Typst com o pacote _fletcher_, no próprio documento (D43), e detalham o que @sec-modulos e @sec-front-dados descrevem em texto.
+
+*Convenções de notação.* Pacote: retângulo com aba. Dependência (`«use»`): seta tracejada com ponta aberta, do pacote ou classe que depende para aquele de que depende. Associação: linha contínua com multiplicidades nas extremidades; ponta aberta indica navegabilidade. Composição: losango preenchido no lado do todo. Generalização (herança): seta contínua com triângulo oco, apontando para a superclasse. Realização (implementa interface): seta tracejada com triângulo oco. Visibilidade: `-` privado, `+` público, `#` protegido.
+
+#let tri = (inherit: "stealth", stealth: 0, fill: white, stroke: 0.6pt, size: 9, angle: 28deg)
+#let comp = (inherit: "diamond", fill: black, stroke: 0.6pt, size: 6)
+#let aberta = ">"
+#let tracejado = (thickness: 0.6pt, dash: "dashed")
+
+// Caixa de classe UML: nome (com estereótipo), atributos e operações.
+#let compart(itens) = block(width: 100%, inset: (x: 3pt, y: 2pt), align(left, text(size: 6.2pt, if itens.len() > 0 { itens.join(linebreak()) } else { [ ] })))
+#let cls(nome, attrs: (), ops: (), est: none, w: 4.0cm, abs: false) = box(width: w, {
+  set block(spacing: 0pt)
+  set par(justify: false, first-line-indent: 0pt, leading: 0.4em)
+  block(width: 100%, fill: soft, inset: 3pt, align(center, {
+    if est != none { text(size: 6pt)[«#est»#linebreak()] }
+    text(size: 7.5pt, weight: "bold", style: if abs { "italic" } else { "normal" }, nome)
+  }))
+  line(length: 100%, stroke: 0.5pt)
+  compart(attrs)
+  if ops.len() > 0 { line(length: 100%, stroke: 0.5pt); compart(ops) }
+})
+#let cn(pos, nome, id: none, ..a) = node(pos, cls(nome, ..a), name: label(if id == none { nome } else { id }), shape: fletcher.shapes.rect, stroke: 0.7pt, fill: white, inset: 0pt)
+
+// Associação com multiplicidades (ca junto de a, cb junto de b) e nome.
+#let assoc(a, b, ca, cb, lbl, marks: (none, none), dash: none) = (
+  edge(a, b, marks: marks, stroke: (thickness: 0.7pt, dash: dash), label: text(size: 7pt, style: "italic", lbl), label-fill: true),
+  edge(a, b, "-", stroke: none, label: text(size: 7pt, weight: "bold", ca), label-pos: 0.12, label-side: left, label-sep: 3pt),
+  edge(a, b, "-", stroke: none, label: text(size: 7pt, weight: "bold", cb), label-pos: 0.88, label-side: left, label-sep: 3pt),
+)
+// Dependência, realização e generalização.
+#let dep(a, b, lbl: none) = edge(a, b, marks: (none, aberta), stroke: tracejado, label: if lbl != none { text(size: 6.5pt)[«#lbl»] }, label-fill: true)
+#let real(a, b) = edge(a, b, marks: (none, tri), stroke: tracejado)
+#let gen(a, b) = edge(a, b, marks: (none, tri), stroke: 0.7pt)
+#let uses(a, b, lbl) = edge(a, b, marks: (none, aberta), stroke: 0.7pt, label: text(size: 6.5pt, lbl), label-fill: true)
+
+// Pacote UML (retângulo com aba).
+#let pk(nome, sub: none, w: 2.9cm) = box(width: w, {
+  set block(spacing: 0pt)
+  set par(justify: false, first-line-indent: 0pt, leading: 0.4em)
+  rect(width: 1.0cm, height: 4pt, stroke: 0.6pt, fill: soft, inset: 0pt)
+  block(width: 100%, stroke: 0.6pt, fill: soft, inset: 4pt, align(center, {
+    text(size: 7.5pt, weight: "bold", nome)
+    if sub != none { linebreak(); text(size: 6pt, sub) }
+  }))
+})
+#let pn(pos, id, nome, ..a) = node(pos, pk(nome, ..a), name: label(id), inset: 0pt, stroke: none)
+#let udep(a, b, lbl: none) = edge(a, b, marks: (none, aberta), stroke: tracejado, label: if lbl != none { text(size: 6.5pt)[«#lbl»] }, label-fill: true)
+
+== Diagrama de pacotes do backend
+Os pacotes de primeiro nível seguem a organização por módulo de negócio (D10); cada módulo contém os subpacotes `web`, `service` e `persistence` (@sec-modulos). As dependências abaixo são as permitidas pelas regras ArchUnit A3 e A4: não há ciclos, e um módulo só usa o pacote `service` (ou eventos) de outro. Dois módulos usam mecanismos de inversão para não criar ciclo: `auth` escuta eventos de `usuarios` (por exemplo, inativação de usuário) e implementa a porta `PoliticaDeSenha`, declarada em `usuarios`; `pagamentos` escuta os eventos de `contratos` e implementa a porta `PendenciasFinanceiras`, declarada em `contratos` (D41). O pacote `shared` (erros, paginação, `Clock`, auditoria e `EscopoDoUsuario`) é usado por todos os módulos; as setas para ele foram omitidas para manter a legibilidade. O módulo `relatorios` é somente de leitura e consulta o esquema por projeções SQL, sem depender de classes de outros módulos.
+
+#figure(
+  dg(
+    spacing: (1.0cm, 0.9cm),
+    pn((0,0), "p-pagamentos", [pagamentos], sub: [web · service · persistence]),
+    pn((2,0), "p-despesas", [despesas], sub: [web · service · persistence]),
+    pn((3,0), "p-relatorios", [relatorios], sub: [web · service (leitura)]),
+    pn((1,1), "p-contratos", [contratos], sub: [web · service · persistence]),
+    pn((0,2), "p-clientes", [clientes], sub: [web · service · persistence]),
+    pn((2,2), "p-cooperados", [cooperados], sub: [web · service · persistence]),
+    pn((1,3), "p-usuarios", [usuarios], sub: [web · service · persistence]),
+    pn((0,3), "p-auth", [auth], sub: [web · service · segurança]),
+    pn((3,3), "p-shared", [shared], sub: [erros · paginação · Clock · escopo]),
+    udep(<p-pagamentos>, <p-contratos>, lbl: [evento/porta]),
+    udep(<p-despesas>, <p-contratos>),
+    udep(<p-despesas>, <p-cooperados>),
+    udep(<p-contratos>, <p-clientes>),
+    udep(<p-contratos>, <p-cooperados>),
+    udep(<p-clientes>, <p-usuarios>),
+    udep(<p-cooperados>, <p-usuarios>),
+    udep(<p-auth>, <p-usuarios>),
+  ),
+  caption: [Diagrama de pacotes do backend (`br.ufla.cooperativa`). Todos os módulos dependem de `shared` (setas omitidas).],
+) <fig-pacotes-back>
+
+== Diagrama de pacotes do front-end
+A organização segue o que foi descrito em @sec-front-dados e o diretório `src/` do front-end. Os módulos de `features` não dependem uns dos outros; o que é comum fica em `shared`. O diretório `shared/generated` é produzido pelo Orval a partir do pacote npm do contrato e usa o cliente HTTP de `shared/api` como _mutator_, de modo que todas as chamadas passam pelo tratamento de 401, 403, 409 e 422.
+
+#figure(
+  dg(
+    spacing: (0.8cm, 0.8cm),
+    pn((1,0), "f-app", [app], sub: [provedores · roteador · AppShell · tema], w: 4.2cm),
+    pn((1,1), "f-features", [features], sub: [auth · usuarios · cooperados · clientes · contratos · pagamentos · despesas · relatorios · painel (pages · components · forms · hooks)], w: 6.2cm),
+    pn((0,2), "f-ui", [shared/ui], sub: [ListPage · FormPage · DetailPage · ConfirmButton · Dinheiro · Data]),
+    pn((1,2), "f-perm", [shared/permissions], sub: [ação → papéis · acoesDisponiveis]),
+    pn((2,2), "f-gen", [shared/generated], sub: [hooks · esquemas Zod · handlers MSW (Orval)]),
+    pn((0,3), "f-lib", [shared/lib], sub: [formatadores pt-BR (Intl, dayjs)]),
+    pn((2,3), "f-api", [shared/api], sub: [fetch · 401/403/409/422 · XSRF]),
+    pn((3,2), "f-mocks", [mocks], sub: [handlers MSW · cenários]),
+    udep(<f-app>, <f-features>),
+    udep(<f-features>, <f-ui>),
+    udep(<f-features>, <f-perm>),
+    udep(<f-features>, <f-gen>),
+    udep(<f-ui>, <f-lib>),
+    udep(<f-gen>, <f-api>, lbl: [mutator]),
+    udep(<f-mocks>, <f-gen>),
+  ),
+  caption: [Diagrama de pacotes do front-end (`gcc188-front/src`).],
+) <fig-pacotes-front>
+
+== Dependências entre front-end, contrato e backend
+Esta visão liga as duas aplicações pelo contrato (D05, D07). Nenhuma delas depende da outra em tempo de compilação: ambas dependem do pacote publicado pelo repositório do contrato, e a única ligação em execução é HTTP/JSON, sempre pela mesma origem (D28).
+
+#figure(
+  dg(
+    spacing: (1.3cm, 0.8cm),
+    node((1,-0.8), text(size: 7.5pt, weight: "bold")[Contrato (`gcc188-api-contract`)], name: <t-ct>, stroke: none, inset: 0pt),
+    pn((0,0), "x-npm", "@ORG/api-contract", sub: [pacote npm: documento e tipos], w: 3.5cm),
+    pn((1,0), "x-oas", "openapi/", sub: [OpenAPI 3.1 (fonte de verdade)], w: 3.2cm),
+    pn((2,0), "x-mvn", "cooperativa-api-contract", sub: [pacote Maven: DTOs e interfaces], w: 3.5cm),
+    pn((0,1), "x-gen", [shared/generated], sub: [Orval], w: 3.5cm),
+    pn((0,2), "x-feat", [features], sub: [telas por papel], w: 3.5cm),
+    pn((0,3), "x-api", [shared/api], sub: [cliente HTTP], w: 3.5cm),
+    node((0,3.8), text(size: 7.5pt, weight: "bold")[Front-end (`gcc188-front`)], name: <t-fe>, stroke: none, inset: 0pt),
+    pn((2,1), "x-web", "*.web", sub: [controladores], w: 3.5cm),
+    pn((2,2), "x-svc", "*.service", sub: [regras de negócio], w: 3.5cm),
+    pn((2,3), "x-per", "*.persistence", sub: [JPA · Flyway], w: 3.5cm),
+    node((2,3.8), text(size: 7.5pt, weight: "bold")[Backend (`gcc188-backend`)], name: <t-be>, stroke: none, inset: 0pt),
+    node(enclose: (<t-ct>, <x-npm>, <x-oas>, <x-mvn>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    node(enclose: (<x-gen>, <x-feat>, <x-api>, <t-fe>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    node(enclose: (<x-web>, <x-svc>, <x-per>, <t-be>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    udep(<x-npm>, <x-oas>, lbl: [gerado de]),
+    udep(<x-mvn>, <x-oas>, lbl: [gerado de]),
+    udep(<x-gen>, <x-npm>, lbl: [importa]),
+    udep(<x-web>, <x-mvn>, lbl: [implementa]),
+    udep(<x-feat>, <x-gen>),
+    udep(<x-web>, <x-svc>),
+    udep(<x-svc>, <x-per>),
+    edge(<x-api>, <x-web>, marks: (aberta, aberta), stroke: 0.9pt, label: text(size: 6.8pt)[HTTP/JSON `/api/v1`\ (mesma origem)], label-side: left, label-fill: true),
+  ),
+  caption: [Dependências entre front-end, contrato e backend. A seta contínua é a comunicação em execução; as tracejadas são dependências de compilação ou geração.],
+) <fig-pacotes-sistema>
+
+== Modelo de classes do domínio <sec-classes-dominio>
+As entidades JPA são _anêmicas_ por decisão arquitetural (RNF-12): guardam estado e associações, e as regras residem na camada de serviço. Por isso as classes de entidade não têm operações. Os atributos de auditoria (`criadoPor`, `aprovadoPor`, `baixadoPor`, `repassadoPor` e `registradoPor`) são associações unidirecionais com `Usuario`, escritas como atributos tipados para não sobrecarregar o diagrama, o mesmo critério adotado no DER da especificação. Os tipos enumerados aparecem em figura própria.
+
+#figure(
+  dg(
+    spacing: (1.9cm, 0.8cm),
+    cn((0,0), "RefreshToken", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-tokenHash: String", "-familia: UUID", "-expiraEm: Instant", "-usadoEm: Instant", "-revogadoEm: Instant", "-criadoEm: Instant")),
+    cn((1,0), "Usuario", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-nome: String", "-email: String", "-senhaHash: String", "-papel: Papel", "-ativo: boolean", "-deveTrocarSenha: boolean", "-falhasLogin: int", "-bloqueadoAte: Instant", "-versao: long")),
+    cn((0,1), "Cliente", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-nome: String", "-documento: String", "-telefone: String", "-emailContato: String", "-ativo: boolean", "-usuario: Usuario")),
+    cn((2,1), "Cooperado", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-matricula: String", "-nome: String", "-cpf: String", "-telefone: String", "-dataIngresso: LocalDate", "-ativo: boolean", "-usuario: Usuario")),
+    cn((1,1), "Contrato", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-descricao: String", "-valorTotal: BigDecimal", "-modalidade: Modalidade", "-numParcelas: int", "-diaVencimento: Integer", "-dataInicio: LocalDate", "-dataFim: LocalDate", "-taxaTipo: TaxaTipo", "-taxaValor: BigDecimal", "-status: StatusContrato", "-motivoReprovacao: String", "-criadoPor: Usuario", "-aprovadoPor: Usuario", "-aprovadoEm: Instant", "-versao: long")),
+    cn((1,2), "Pagamento", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-numeroParcela: int", "-dataVencimento: LocalDate", "-valorBruto: BigDecimal", "-valorTaxa: BigDecimal", "-valorLiquido: BigDecimal", "-status: StatusPagamento", "-dataBaixa: LocalDate", "-baixadoPor: Usuario", "-dataRepasse: LocalDate", "-repassadoPor: Usuario", "-observacao: String", "-versao: long")),
+    cn((2,2), "Despesa", est: "Entity", w: 3.6cm, attrs: ("-id: Long", "-origem: OrigemDespesa", "-categoria: CategoriaDespesa", "-descricao: String", "-valor: BigDecimal", "-dataDespesa: LocalDate", "-registradoPor: Usuario", "-versao: long")),
+    ..assoc(<Usuario>, <RefreshToken>, "1", "*", "possui", marks: (comp, none)),
+    ..assoc(<Usuario>, <Cliente>, "1", "0..1", "vincula", marks: (none, aberta)),
+    ..assoc(<Usuario>, <Cooperado>, "1", "0..1", "vincula", marks: (none, aberta)),
+    ..assoc(<Cliente>, <Contrato>, "1", "*", "contrata"),
+    ..assoc(<Cooperado>, <Contrato>, "1", "*", "executa"),
+    ..assoc(<Contrato>, <Pagamento>, "1", "*", "gera", marks: (comp, none)),
+    ..assoc(<Cooperado>, <Despesa>, "0..1", "*", "origina"),
+    ..assoc(<Contrato>, <Despesa>, "0..1", "*", "associa"),
+  ),
+  caption: [Diagrama de classes do domínio (entidades JPA, atributos e associações). `Usuario` vincula-se a no máximo um `Cliente` ou um `Cooperado` (RN14).],
+) <fig-classes-dominio>
+
+#figure(
+  dg(
+    spacing: (0.5cm, 0.8cm),
+    cn((2.5,0), "EntidadeAuditada", est: "MappedSuperclass", abs: true, w: 4.0cm, attrs: ("#criadoEm: Instant", "#atualizadoEm: Instant")),
+    cn((0,1.4), "Usuario", id: "h-usuario", w: 2.2cm),
+    cn((1,1.4), "Cooperado", id: "h-cooperado", w: 2.2cm),
+    cn((2,1.4), "Cliente", id: "h-cliente", w: 2.2cm),
+    cn((3,1.4), "Contrato", id: "h-contrato", w: 2.2cm),
+    cn((4,1.4), "Pagamento", id: "h-pagamento", w: 2.2cm),
+    cn((5,1.4), "Despesa", id: "h-despesa", w: 2.2cm),
+    gen(<h-usuario>, <EntidadeAuditada>), gen(<h-cooperado>, <EntidadeAuditada>),
+    gen(<h-cliente>, <EntidadeAuditada>), gen(<h-contrato>, <EntidadeAuditada>),
+    gen(<h-pagamento>, <EntidadeAuditada>), gen(<h-despesa>, <EntidadeAuditada>),
+  ),
+  caption: [Hierarquia de herança das entidades: a superclasse mapeada preenche `criado_em` e `atualizado_em` por _Spring Data Auditing_ (RNF-13, D14).],
+) <fig-heranca-entidades>
+
+#figure(
+  dg(
+    spacing: (0.25cm, 0.8cm),
+    cn((1.5,0), "RuntimeException", est: "Java", w: 3.6cm),
+    cn((1.5,1), "ApiException", abs: true, w: 5.0cm, attrs: ("-status: HttpStatus", "-codigoRegra: String", "-campo: String"), ops: ("+getStatus(): HttpStatus", "+getCodigoRegra(): String")),
+    cn((0,2.4), "RegraNegocioException", w: 3.9cm, attrs: ("status = 422",)),
+    cn((1,2.4), "TransicaoInvalidaException", w: 3.9cm, attrs: ("status = 409",)),
+    cn((2,2.4), "ConflitoException", w: 3.9cm, attrs: ("status = 409 (versão, unicidade)",)),
+    cn((3,2.4), "RecursoNaoEncontradoException", w: 3.9cm, attrs: ("status = 404",)),
+    gen(<ApiException>, <RuntimeException>),
+    gen(<RegraNegocioException>, <ApiException>), gen(<TransicaoInvalidaException>, <ApiException>),
+    gen(<ConflitoException>, <ApiException>), gen(<RecursoNaoEncontradoException>, <ApiException>),
+  ),
+  caption: [Hierarquia de exceções de negócio. Um único `@RestControllerAdvice` converte qualquer `ApiException` em `ProblemDetail` (RFC 9457), conforme o quadro de tradução de exceções (OCP e LSP, @sec-codificacao).],
+) <fig-heranca-excecoes>
+
+#figure(
+  dg(
+    spacing: (0.3cm, 0.45cm),
+    cn((0,0), "Papel", est: "enumeration", w: 3.3cm, attrs: ("ADMINISTRADOR", "FINANCEIRO", "MOTORISTA", "CLIENTE")),
+    cn((1,0), "Modalidade", est: "enumeration", w: 3.3cm, attrs: ("UNICO", "MENSAL")),
+    cn((2,0), "TaxaTipo", est: "enumeration", w: 3.3cm, attrs: ("PERCENTUAL", "FIXO")),
+    cn((3,0), "OrigemDespesa", est: "enumeration", w: 3.3cm, attrs: ("COOPERATIVA", "COOPERADO")),
+    cn((0,1), "StatusContrato", est: "enumeration", w: 3.3cm, attrs: ("RASCUNHO", "PENDENTE_APROVACAO", "ATIVO", "ENCERRADO", "CANCELADO")),
+    cn((1,1), "StatusPagamento", est: "enumeration", w: 3.3cm, attrs: ("PREVISTO", "PAGO", "REPASSADO", "CANCELADO")),
+    cn((2,1), "CategoriaDespesa", est: "enumeration", w: 3.3cm, attrs: ("COMBUSTIVEL", "PEDAGIO", "MANUTENCAO", "ADMINISTRATIVA", "TRIBUTOS", "OUTROS")),
+  ),
+  caption: [Tipos enumerados do domínio, persistidos como `VARCHAR` com `CHECK` (D18).],
+) <fig-enums>
+
+== Classes de projeto do CRUD de usuários
+O módulo `usuarios` é o CRUD de uma única tabela exigido pela disciplina (RF-USR-01 a 04). O controlador implementa a interface gerada do contrato (D07); o serviço concentra as regras (RN14) e depende apenas de abstrações: repositório, `PasswordEncoder` e a porta `PoliticaDeSenha`.
+
+#figure(
+  dg(
+    spacing: (1.75cm, 0.8cm),
+    cn((0,0), "UsuariosApi", est: "interface (gerada do contrato)", w: 4.1cm, ops: ("+criarUsuario(req)", "+listarUsuarios(papel, ativo, page, size, sort)", "+consultarUsuario(id)", "+atualizarUsuario(id, req)", "+alterarSituacaoUsuario(id, req)", "+redefinirSenha(id, req)")),
+    cn((1,0), "UsuariosController", est: "RestController", w: 4.1cm, attrs: ("-service: UsuarioService", "-mapper: UsuarioMapper"), ops: ("+criarUsuario(req)", "+listarUsuarios(...)", "+consultarUsuario(id)", "+atualizarUsuario(id, req)", "+alterarSituacaoUsuario(id, req)", "+redefinirSenha(id, req)")),
+    cn((2,0), "UsuarioMapper", est: "Mapper (MapStruct)", w: 4.1cm, ops: ("+paraDto(Usuario): UsuarioDto", "+paraComando(CriarUsuarioRequest): CriarUsuarioComando")),
+    cn((0,1), "PoliticaDeSenha", est: "porta", w: 4.1cm, ops: ("+validar(senha)",)),
+    cn((1,1), "UsuarioService", est: "Service", w: 4.1cm, attrs: ("-repositorio: UsuarioRepository", "-codificador: PasswordEncoder", "-politica: PoliticaDeSenha", "-eventos: ApplicationEventPublisher"), ops: ("+criar(comando): Usuario", "+listar(filtro, pageable): Page<Usuario>", "+consultar(id): Usuario", "+atualizar(id, comando): Usuario", "+alterarSituacao(id, ativo): Usuario", "+redefinirSenha(id, senha)")),
+    cn((2,1), "PasswordEncoder", est: "interface (Spring Security)", w: 4.1cm, ops: ("+encode(senha): String", "+matches(senha, hash): boolean")),
+    cn((0,2), "JpaRepository", est: "interface (Spring Data)", w: 4.1cm, ops: ("+save(entidade)", "+findById(id)", "+findAll(spec, pageable)")),
+    cn((1,2), "UsuarioRepository", est: "interface", w: 4.1cm, ops: ("+existsByEmailIgnoreCase(email): boolean", "+findByEmailIgnoreCase(email): Optional<Usuario>")),
+    cn((2,2), "Usuario", est: "Entity", w: 4.1cm, attrs: ("-id: Long", "-email: String", "-papel: Papel", "-ativo: boolean", "-versao: long")),
+    real(<UsuariosController>, <UsuariosApi>),
+    uses(<UsuariosController>, <UsuarioMapper>, [-mapper]),
+    uses(<UsuariosController>, <UsuarioService>, [-service]),
+    uses(<UsuarioService>, <PoliticaDeSenha>, [-politica]),
+    uses(<UsuarioService>, <PasswordEncoder>, [-codificador]),
+    uses(<UsuarioService>, <UsuarioRepository>, [-repositorio]),
+    gen(<UsuarioRepository>, <JpaRepository>),
+    dep(<UsuarioRepository>, <Usuario>, lbl: [gerencia]),
+  ),
+  caption: [Diagrama de classes do módulo `usuarios` (CRUD de uma tabela). Implementações de `PoliticaDeSenha` e de `PasswordEncoder` ficam fora do módulo (`auth` e Spring Security).],
+) <fig-classes-usuarios>
+
+== Classes de projeto do CRUD de contratos
+O módulo `contratos` é o CRUD que relaciona quatro tabelas (`contrato`, `cooperado`, `cliente` e `pagamento`; RF-CTR-01 a 10). Para validar que cooperado e cliente estão ativos (RN13), o serviço usa o pacote `service` dos módulos `cooperados` e `clientes`, nunca seus repositórios (regra A4). As regras de cálculo (RN03), de estado (RN12) e de escopo (RN10) estão em classes próprias, o que as torna testáveis sem HTTP nem banco.
+
+#figure(
+  dg(
+    spacing: (1.75cm, 0.8cm),
+    cn((0,0), "CooperadoService", est: "outro módulo", w: 4.1cm, ops: ("+exigirAtivo(id): Cooperado",)),
+    cn((1,0), "ContratosController", est: "RestController", w: 4.1cm, attrs: ("-service: ContratoService",), ops: ("+criarContrato(req)", "+editarContrato(id, req)", "+excluirContrato(id)", "+detalharContrato(id)", "+listarContratos(filtros...)", "+submeterContrato(id)", "+aprovarContrato(id)", "+reprovarContrato(id, req)", "+encerrarContrato(id)", "+cancelarContrato(id)")),
+    cn((2,0), "TaxaCalculadora", est: "regra pura", w: 4.1cm, ops: ("+calcular(bruto, tipo, taxaValor): BigDecimal", "+validar(tipo, taxaValor, parcela)")),
+    cn((0,1), "ClienteService", est: "outro módulo", w: 4.1cm, ops: ("+exigirAtivo(id): Cliente",)),
+    cn((1,1), "ContratoService", est: "Service", w: 4.1cm, attrs: ("-contratos: ContratoRepository", "-cooperados: CooperadoService", "-clientes: ClienteService", "-estados: ContratoEstados", "-taxa: TaxaCalculadora", "-escopo: EscopoDoUsuario", "-eventos: ApplicationEventPublisher", "-relogio: Clock"), ops: ("+criar(ator, cmd): Contrato", "+editar(ator, id, cmd): Contrato", "+excluir(ator, id)", "+detalhar(ator, id): ContratoDetalhe", "+listar(ator, filtro, pageable): Page", "+submeter(ator, id)", "+aprovar(ator, id)", "+reprovar(ator, id, motivo)", "+encerrar(ator, id)", "+cancelar(ator, id)")),
+    cn((2,1), "ContratoEstados", est: "regra pura", w: 4.1cm, attrs: ("-transicoes: Map<Status, Set<Transicao>>",), ops: ("+permitida(de, para, papel): boolean", "+exigirRascunho(contrato)", "+aplicar(contrato, para, ator)")),
+    cn((0,2), "ContratoRepository", est: "interface", w: 4.1cm, ops: ("+findOne(spec): Optional<Contrato>", "+findAll(spec, pageable)", "+save(contrato)", "+delete(contrato)")),
+    cn((1,2), "ApplicationEventPublisher", est: "interface (Spring)", w: 4.1cm, ops: ("+publishEvent(evento)",)),
+    cn((2,2), "EscopoDoUsuario", est: "shared", w: 4.1cm, ops: ("+paraContratos(ator): Specification", "+paraPagamentos(ator): Specification", "+paraDespesas(ator): Specification")),
+    uses(<ContratosController>, <ContratoService>, [-service]),
+    uses(<ContratoService>, <CooperadoService>, [-cooperados]),
+    uses(<ContratoService>, <ClienteService>, [-clientes]),
+    uses(<ContratoService>, <ContratoRepository>, [-contratos]),
+    uses(<ContratoService>, <TaxaCalculadora>, [-taxa]),
+    uses(<ContratoService>, <ContratoEstados>, [-estados]),
+    uses(<ContratoService>, <EscopoDoUsuario>, [-escopo]),
+    uses(<ContratoService>, <ApplicationEventPublisher>, [-eventos]),
+  ),
+  caption: [Diagrama de classes do módulo `contratos` (CRUD que relaciona `contrato`, `cooperado`, `cliente` e `pagamento`).],
+) <fig-classes-contratos>
+
+== Classes de projeto da interação entre contratos e pagamentos
+A aprovação do contrato gera o cronograma de pagamentos na mesma transação (RF-CTR-04, RNF-05) sem que `contratos` conheça `pagamentos`: o serviço publica o evento e o módulo `pagamentos` o consome. Em sentido contrário, o encerramento pergunta pela porta `PendenciasFinanceiras`, declarada em `contratos` e implementada em `pagamentos` (RN06). Os dois mecanismos aplicam o princípio da inversão de dependência (@sec-codificacao).
+
+#figure(
+  dg(
+    spacing: (1.9cm, 0.8cm),
+    cn((0,0.5), "ContratoService", id: "i-cs", est: "módulo contratos", w: 4.0cm, ops: ("+aprovar(ator, id)", "+cancelar(ator, id)", "+encerrar(ator, id)")),
+    cn((1,0), "ContratoAprovado", est: "evento (record)", w: 4.0cm, attrs: ("+contratoId: Long", "+aprovadoPor: Long", "+instante: Instant")),
+    cn((1,1), "ContratoCancelado", est: "evento (record)", w: 4.0cm, attrs: ("+contratoId: Long", "+canceladoPor: Long", "+instante: Instant")),
+    cn((2,0), "CronogramaPagamentos", est: "regra pura", w: 4.0cm, ops: ("+gerar(contrato): List<Pagamento>",)),
+    cn((2,1), "PagamentoService", est: "módulo pagamentos", w: 4.0cm, ops: ("+gerarCronograma(ContratoAprovado)", "+cancelarPrevistos(ContratoCancelado)", "+temPendencias(contratoId): boolean", "+registrarBaixa(ator, id, cmd)", "+registrarRepasse(ator, id, cmd)", "+estornar(ator, id, justificativa)")),
+    cn((1,2), "PendenciasFinanceiras", est: "porta (módulo contratos)", w: 4.0cm, ops: ("+temPendencias(contratoId): boolean",)),
+    cn((2,2), "PagamentoRepository", est: "interface", w: 4.0cm, ops: ("+findByContratoId(id): List<Pagamento>", "+existsByContratoIdAndStatusIn(id, status)")),
+    dep(<i-cs>, <ContratoAprovado>, lbl: [publica]),
+    dep(<i-cs>, <ContratoCancelado>, lbl: [publica]),
+    dep(<i-cs>, <PendenciasFinanceiras>, lbl: [consulta]),
+    dep(<PagamentoService>, <ContratoAprovado>, lbl: [escuta]),
+    dep(<PagamentoService>, <ContratoCancelado>, lbl: [escuta]),
+    real(<PagamentoService>, <PendenciasFinanceiras>),
+    uses(<PagamentoService>, <CronogramaPagamentos>, [-cronograma]),
+    uses(<PagamentoService>, <PagamentoRepository>, [-pagamentos]),
+  ),
+  caption: [Diagrama de classes da colaboração entre `contratos` e `pagamentos` por evento de domínio síncrono e porta (D41).],
+) <fig-classes-eventos>
+
+
 // ───────────────────────── 6. Banco de dados ─────────────────────────
 = Banco de dados
 
@@ -877,6 +1165,212 @@ Para reduzir o esforço (R7), as telas reutilizam três componentes:
 == Entrega
 A imagem do front é construída em dois estágios: um estágio Node executa `npm ci`, `npm run generate` e `npm run build`; o estágio final usa Nginx sem privilégios apenas para servir os arquivos, com retorno a `index.html` nas rotas da SPA, cache longo para `/assets/` (nomes com _hash_), sem cache para `index.html` e uma rota `/healthz`. Como o front acessa `/api` na mesma origem, a imagem não precisa de configuração em tempo de execução. O acesso ao pacote npm privado durante o _build_ usa um _secret_ do BuildKit, que não permanece na imagem.
 
+// ───────────────────────── Diagramas de sequência ─────────────────────────
+= Diagramas de sequência dos CRUDs <sec-seq>
+Este capítulo detalha, em oito diagramas de sequência, as quatro operações de cada um dos dois CRUDs exigidos pela disciplina: o CRUD de uma tabela (`usuario`, RF-USR-01 a 04) e o CRUD que relaciona quatro tabelas (`contrato`, `cooperado`, `cliente` e `pagamento`, RF-CTR-01, 02, 09 e 10). Cada diagrama desce da interface web até o banco de dados, passando pelas camadas do backend (@sec-modulos), com os nomes reais de classes e métodos previstos nos diagramas de classes do capítulo anterior (@fig-classes-usuarios e @fig-classes-contratos).
+
+Os diagramas mostram o *fluxo principal* e foram simplificados, sem fragmentos `alt` ou `loop`; as alternativas relevantes (erros 4xx) constam no quadro a seguir. A coluna da interface representa a página, o _hook_ gerado pelo Orval e o cliente HTTP de `shared/api` (@sec-front-dados): a página chama o _hook_, que envia a requisição com o cabeçalho `X-XSRF-TOKEN` e o _cookie_ de acesso; ao receber a resposta, o _hook_ invalida o _cache_ do TanStack Query. Nos diagramas, `ator` é o usuário autenticado (identificador, papel e vínculo), obtido do _token_ de acesso, e uma caixa sobre a linha de vida indica ação interna do objeto.
+
+#quadro([Cobertura dos oito diagramas e fluxos alternativos.], (auto, 1fr, auto, 1fr),
+  table.header[*Figura*][*Operação*][*RF*][*Fluxos alternativos (não desenhados)*],
+  [@fig-seq-1], [Criar usuário.], [RF-USR-01], [`422` se a senha viola a política; `409` se o e-mail já existe (RN14); `403` se o papel não é ADM.],
+  [@fig-seq-2], [Listar usuários com filtros e paginação.], [RF-USR-02], [`400` se `sort` usa campo não permitido; `403` se o papel não é ADM.],
+  [@fig-seq-3], [Atualizar usuário.], [RF-USR-03], [`404` se não existe; `409` se `versao` diverge ou o e-mail já existe; `422` se o papel é incompatível com o vínculo (RN14).],
+  [@fig-seq-4], [Inativar usuário.], [RF-USR-04], [`404` se não existe; `409` se a situação já é a pedida.],
+  [@fig-seq-5], [Criar contrato em rascunho.], [RF-CTR-01], [`422` se a taxa é inválida (RN02, RN03) ou se cooperado ou cliente está inativo (RN13); `404` se não existem.],
+  [@fig-seq-6], [Detalhar contrato com cooperado, cliente e pagamentos.], [RF-CTR-09], [`404` se o contrato não existe ou está fora do escopo do usuário (RN10).],
+  [@fig-seq-7], [Editar contrato em rascunho.], [RF-CTR-02], [`409` se o contrato não está em RASCUNHO (RN12) ou `versao` diverge; `422` se a taxa é inválida (RN02).],
+  [@fig-seq-8], [Excluir contrato em rascunho.], [RF-CTR-10], [`409` se o contrato não está em RASCUNHO (RN11, RN12); `404` se fora do escopo.],
+)
+
+#let seq-texto(t) = if type(t) == str { t.split("\n").join(linebreak()) } else { t }
+// Diagrama de sequência: partes (linhas de vida) e mensagens (de, para, texto, [tracejada]).
+// Mensagem com de = para é ação interna (caixa sobre a linha de vida).
+#let seqd(partes, msgs) = {
+  let n = partes.len()
+  let linhas = msgs.len() + 1
+  dg(
+    spacing: (0.75cm, 0.66cm),
+    ..partes.enumerate().map(((i, p)) => node((i, 0), text(size: 6.6pt, weight: "bold", seq-texto(p)), width: 2.5cm, stroke: 0.6pt, fill: soft)),
+    ..range(n).map(i => edge((i, 0), (i, linhas), "--", stroke: 0.5pt + luma(150))),
+    ..msgs.enumerate().map(((k, m)) => {
+      let y = k + 1.4
+      let de = m.at(0)
+      let para = m.at(1)
+      let tracejada = m.len() > 3 and m.at(3)
+      if de == para {
+        node((de, y), text(size: 6.3pt, seq-texto(m.at(2))), stroke: 0.4pt, fill: luma(246), inset: 2.5pt, corner-radius: 2pt)
+      } else {
+        edge((de, y), (para, y), if tracejada { "--|>" } else { "-|>" }, label: text(size: 6.3pt, seq-texto(m.at(2))), label-side: left, label-sep: 1.5pt)
+      }
+    }),
+  )
+}
+
+#let p-usr = ("Interface web\n(UsuariosPage)", "Controlador\n(UsuariosController)", "Serviço\n(UsuarioService)", "Repositório\n(UsuarioRepository)", "Banco\n(PostgreSQL)")
+#let p-ctr = ("Interface web\n(ContratosPage)", "Controlador\n(ContratosController)", "Serviço\n(ContratoService)", "Colaboradores\n(serviços e repositórios)", "Banco\n(PostgreSQL)")
+
+== CRUD de uma tabela: usuários
+#figure(
+  seqd(p-usr, (
+    (0, 1, "POST /usuarios\n(useCriarUsuario)"),
+    (1, 1, "@PreAuthorize(ADM); valida DTO"),
+    (1, 2, "criar(CriarUsuarioComando)"),
+    (2, 3, "existsByEmailIgnoreCase(email)"),
+    (3, 2, "false", true),
+    (2, 2, "politica.validar(senha); encode(senha)"),
+    (2, 3, "save(usuario)"),
+    (3, 4, "INSERT INTO usuario"),
+    (4, 3, "id gerado", true),
+    (3, 2, "Usuario", true),
+    (2, 1, "Usuario", true),
+    (1, 1, "UsuarioMapper.paraDto(usuario)"),
+    (1, 0, "201 Created + Location\n(UsuarioDto)", true),
+  )),
+  caption: [Sequência: criar usuário (RF-USR-01).],
+) <fig-seq-1>
+
+#figure(
+  seqd(p-usr, (
+    (0, 1, "GET /usuarios?papel=&ativo=\n&page=0&size=20"),
+    (1, 1, "@PreAuthorize(ADM)"),
+    (1, 2, "listar(filtro, pageable)"),
+    (2, 2, "UsuarioSpecs.filtrar(filtro)"),
+    (2, 3, "findAll(spec, pageable)"),
+    (3, 4, "SELECT ... LIMIT ? OFFSET ?"),
+    (4, 3, "linhas", true),
+    (3, 2, "Page<Usuario>", true),
+    (2, 1, "Page<Usuario>", true),
+    (1, 1, "UsuarioMapper.paraDto (cada item)"),
+    (1, 0, "200 OK\n{content, page, size, ...}", true),
+  )),
+  caption: [Sequência: listar usuários com filtro e paginação (RF-USR-02). A consulta de um usuário por identificador, `GET /usuarios/{id}`, segue o mesmo caminho com `consultar(id)` e `findById(id)`.],
+) <fig-seq-2>
+
+#figure(
+  seqd(p-usr, (
+    (0, 1, "PUT /usuarios/{id}\n(useAtualizarUsuario)"),
+    (1, 1, "@PreAuthorize(ADM); valida DTO"),
+    (1, 2, "atualizar(id, comando)"),
+    (2, 3, "findById(id)"),
+    (3, 4, "SELECT ... WHERE id = ?"),
+    (4, 3, "linha", true),
+    (3, 2, "Usuario", true),
+    (2, 2, "confere versao; valida RN14"),
+    (2, 3, "saveAndFlush(usuario)"),
+    (3, 4, "UPDATE ... WHERE id=? AND versao=?"),
+    (4, 3, "1 linha", true),
+    (3, 2, "Usuario (versao + 1)", true),
+    (2, 1, "Usuario", true),
+    (1, 0, "200 OK (UsuarioDto)", true),
+  )),
+  caption: [Sequência: atualizar usuário (RF-USR-03), com bloqueio otimista (D13).],
+) <fig-seq-3>
+
+#figure(
+  seqd(p-usr, (
+    (0, 1, "PATCH /usuarios/{id}/situacao\n{ativo: false}"),
+    (1, 1, "@PreAuthorize(ADM)"),
+    (1, 2, "alterarSituacao(id, false)"),
+    (2, 3, "findById(id)"),
+    (3, 4, "SELECT ... WHERE id = ?"),
+    (4, 3, "linha", true),
+    (3, 2, "Usuario", true),
+    (2, 2, "usuario.setAtivo(false)"),
+    (2, 3, "save(usuario)"),
+    (3, 4, "UPDATE usuario"),
+    (2, 2, "publica UsuarioInativado"),
+    (2, 1, "Usuario", true),
+    (1, 0, "200 OK (UsuarioDto)", true),
+  )),
+  caption: [Sequência: inativar usuário (RF-USR-04). O evento `UsuarioInativado` é tratado pelo módulo `auth` na mesma transação, que revoga os _refresh tokens_ do usuário (@sec-auth).],
+) <fig-seq-4>
+
+== CRUD relacionando quatro tabelas: contratos
+#figure(
+  seqd(p-ctr, (
+    (0, 1, "POST /contratos\n(useCriarContrato)"),
+    (1, 1, "@PreAuthorize(MOT, ADM); valida DTO"),
+    (1, 2, "criar(ator, CriarContratoComando)"),
+    (2, 2, "MOT: cooperado = vínculo do ator"),
+    (2, 3, "CooperadoService.exigirAtivo(id)"),
+    (3, 4, "SELECT ... FROM cooperado"),
+    (2, 3, "ClienteService.exigirAtivo(id)"),
+    (3, 4, "SELECT ... FROM cliente"),
+    (2, 2, "TaxaCalculadora.validar (RN02, RN03)"),
+    (2, 3, "ContratoRepository.save(RASCUNHO)"),
+    (3, 4, "INSERT INTO contrato"),
+    (3, 2, "Contrato", true),
+    (2, 1, "Contrato", true),
+    (1, 0, "201 Created + Location\n(ContratoDto)", true),
+  )),
+  caption: [Sequência: criar contrato em rascunho (RF-CTR-01), envolvendo `contrato`, `cooperado` e `cliente`.],
+) <fig-seq-5>
+
+#figure(
+  seqd(p-ctr, (
+    (0, 1, "GET /contratos/{id}\n(useDetalharContrato)"),
+    (1, 2, "detalhar(ator, id)"),
+    (2, 2, "EscopoDoUsuario.paraContratos(ator)"),
+    (2, 3, "ContratoRepository.findOne(escopo e id)"),
+    (3, 4, "SELECT ... JOIN cooperado JOIN cliente"),
+    (4, 3, "linha ou vazio (404)", true),
+    (3, 2, "Contrato", true),
+    (2, 3, "PagamentoRepository.findByContratoId(id)"),
+    (3, 4, "SELECT ... FROM pagamento ORDER BY parcela"),
+    (4, 3, "linhas", true),
+    (3, 2, "List<Pagamento>", true),
+    (2, 1, "ContratoDetalhe", true),
+    (1, 1, "ContratoMapper.paraDetalheDto"),
+    (1, 0, "200 OK (cooperado, cliente,\npagamentos)", true),
+    (0, 0, "acoesDisponiveis(contrato, papel)"),
+  )),
+  caption: [Sequência: detalhar contrato (RF-CTR-09), com consulta limitada ao escopo do usuário (RN10) e leitura de `contrato`, `cooperado`, `cliente` e `pagamento`. Ao final, a interface calcula as ações de transição visíveis (RF-WEB-05).],
+) <fig-seq-6>
+
+#figure(
+  seqd(p-ctr, (
+    (0, 1, "PUT /contratos/{id}\n(useEditarContrato)"),
+    (1, 1, "@PreAuthorize(MOT, ADM); valida DTO"),
+    (1, 2, "editar(ator, id, comando)"),
+    (2, 3, "ContratoRepository.findOne(escopo e id)"),
+    (3, 4, "SELECT ... FROM contrato"),
+    (3, 2, "Contrato", true),
+    (2, 2, "exigirRascunho(); confere versao"),
+    (2, 3, "CooperadoService/ClienteService\n.exigirAtivo (se alterados)"),
+    (3, 4, "SELECT ... cooperado, cliente"),
+    (2, 2, "TaxaCalculadora.validar (RN02)"),
+    (2, 3, "saveAndFlush(contrato)"),
+    (3, 4, "UPDATE contrato ... AND versao = ?"),
+    (3, 2, "Contrato (versao + 1)", true),
+    (2, 1, "Contrato", true),
+    (1, 0, "200 OK (ContratoDto)", true),
+  )),
+  caption: [Sequência: editar contrato em rascunho (RF-CTR-02; RN02, RN12).],
+) <fig-seq-7>
+
+#figure(
+  seqd(p-ctr, (
+    (0, 0, "ConfirmButton (RF-WEB-10)"),
+    (0, 1, "DELETE /contratos/{id}\n(useExcluirContrato)"),
+    (1, 1, "@PreAuthorize(MOT, ADM)"),
+    (1, 2, "excluir(ator, id)"),
+    (2, 3, "ContratoRepository.findOne(escopo e id)"),
+    (3, 4, "SELECT ... FROM contrato"),
+    (3, 2, "Contrato", true),
+    (2, 2, "exigirRascunho() (RN11, RN12)"),
+    (2, 3, "PagamentoRepository.existsByContratoId(id)"),
+    (3, 4, "SELECT 1 FROM pagamento ..."),
+    (3, 2, "false", true),
+    (2, 3, "ContratoRepository.delete(contrato)"),
+    (3, 4, "DELETE FROM contrato WHERE id = ?"),
+    (2, 1, "void", true),
+    (1, 0, "204 No Content", true),
+  )),
+  caption: [Sequência: excluir contrato em rascunho (RF-CTR-10), que confere em `pagamento` que não há parcelas geradas (RN11).],
+) <fig-seq-8>
+
+
 // ───────────────────────── 9. Infraestrutura ─────────────────────────
 = Infraestrutura e implantação (`gcc188-infra`) <sec-infra>
 
@@ -907,6 +1401,60 @@ gcc188-infra/
 )
 
 A rede `internal` é declarada com `internal: true` (sem saída para fora do _host_), e somente `proxy`, `front` e `backend` participam de `edge`. Endurecimento aplicado a todos os serviços: `restart: unless-stopped`, `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]`, limites de memória e CPU e _logs_ com rotação.
+
+== Diagrama de implantação <sec-implantacao>
+O diagrama de implantação UML mostra os _nós_ de execução, os _artefatos_ implantados em cada um e os caminhos de comunicação entre eles (OBJECT MANAGEMENT GROUP, 2017). Ele complementa a visão de contêineres (nível 2 do modelo C4) do capítulo de arquitetura, que mostra responsabilidades, e acrescenta o que é específico da implantação: imagens e versões, portas, redes, volumes e dependências externas. Representa o ambiente de produção em um único _host_ (D27); o ambiente de desenvolvimento difere por usar certificado do mkcert e publicar a porta do banco apenas em 127.0.0.1.
+
+#let nd(est, titulo, ..linhas) = {
+  set par(justify: false, first-line-indent: 0pt, leading: 0.45em)
+  align(center, {
+    text(size: 6pt)[«#est»]
+    linebreak()
+    text(size: 7.5pt, weight: "bold", titulo)
+    for l in linhas.pos() { linebreak(); text(size: 6.3pt, l) }
+  })
+}
+#let ni(pos, id, ..a, w: 3.1cm) = node(pos, nd(..a), name: label(id), width: w, stroke: 0.8pt, fill: white, inset: 5pt)
+#let com(a, b, lbl) = edge(a, b, "-", stroke: 0.8pt, label: text(size: 6.3pt, lbl), label-fill: true)
+#let dpl(a, b, lbl) = edge(a, b, marks: (none, aberta), stroke: tracejado, label: text(size: 6.3pt, lbl), label-fill: true)
+
+#figure(
+  dg(
+    spacing: (1.15cm, 1.0cm),
+    ni((0,1), "n-dev", "device", "Computador ou celular", [navegador (Chrome,], [Firefox, Edge, Safari)], [«artifact» SPA (HTML, JS, CSS)], w: 2.6cm),
+    ni((1,1), "n-proxy", "container", "proxy", [«artifact» caddy:⟨versão⟩], [Caddyfile], [portas 80 e 443], [volume caddy_data], w: 2.7cm),
+    ni((2,0), "n-front", "container", "front", [«artifact» gcc188-front:X.Y.Z], [Nginx · porta 8080], [somente leitura], w: 2.9cm),
+    ni((2,1), "n-back", "container", "backend", [«artifact» gcc188-backend:X.Y.Z], [Spring Boot · 8080 (HTTP)], [8081 gerenciamento (não roteada)], [secrets em /run/secrets], w: 2.9cm),
+    ni((3,1), "n-db", "container", "db", [«artifact» postgres:⟨major⟩], [porta 5432 (não publicada)], [volume pgdata], w: 2.6cm),
+    ni((3,2), "n-bkp", "container", "backup", [«artifact» imagem de backup], [pg_dump diário, 02:00], [volume backups], w: 2.6cm),
+    node(enclose: (<n-proxy>, <n-front>, <n-back>, <n-db>, <n-bkp>), stroke: 0.9pt + luma(70), inset: 12pt, snap: false, fill: luma(250)),
+    node((1.5,2), text(size: 7pt, weight: "bold")[«execution environment»\ Host Docker (Compose)\ redes `edge` e `internal`], stroke: none, inset: 0pt),
+    ni((1,-1), "n-acme", "external", "Let's Encrypt", [ACME], w: 2.4cm),
+    ni((3,-1), "n-ghcr", "external", "GHCR", [imagens OCI], [front e backend], w: 2.6cm),
+    ni((3,3.4), "n-off", "external", "Armazenamento externo", [cópia criptografada], [(somente produção)], w: 2.6cm),
+    com(<n-dev>, <n-proxy>, [HTTPS\ :443]),
+    com(<n-proxy>, <n-front>, [HTTP :8080\ `/` (edge)]),
+    com(<n-proxy>, <n-back>, [HTTP :8080\ `/api` (edge)]),
+    com(<n-back>, <n-db>, [JDBC :5432\ (internal)]),
+    com(<n-bkp>, <n-db>, [pg_dump\ (internal)]),
+    dpl(<n-proxy>, <n-acme>, [«ACME» :443]),
+    dpl(<n-ghcr>, <n-front>, [«pull»]),
+    dpl(<n-ghcr>, <n-back>, [«pull»]),
+    dpl(<n-bkp>, <n-off>, [«copy»]),
+  ),
+  caption: [Diagrama de implantação UML do ambiente de produção (Docker Compose). Linhas contínuas: caminhos de comunicação; tracejadas: dependências de implantação com sistemas externos.],
+) <fig-implantacao>
+
+#quadro([Nós, artefatos, portas, redes e volumes.], (auto, 1fr, 1fr, auto, 1fr),
+  table.header[*Nó*][*Artefato implantado*][*Portas*][*Rede*][*Volume e observações*],
+  [Dispositivo do usuário], [SPA (HTML, JS e CSS) baixada do `front` e executada no navegador.], [Saída 443], [Internet], [Sem estado persistente; sessão em _cookies_ (@sec-auth).],
+  [`proxy`], [Imagem `caddy` com versão fixada em `versions.env`; `Caddyfile`.], [80 e 443 (únicas publicadas)], [`edge`], [`caddy_data` persistente guarda os certificados ACME.],
+  [`front`], [`ghcr.io/ORG/gcc188-front:X.Y.Z` (Nginx sem privilégios).], [8080], [`edge`], [Sem estado; sistema de arquivos somente leitura.],
+  [`backend`], [`ghcr.io/ORG/gcc188-backend:X.Y.Z` (Spring Boot).], [8080 (API) e 8081 (gerenciamento, não publicada)], [`edge` e `internal`], [_Secrets_ por arquivos em `/run/secrets/`; só inicia com o banco saudável.],
+  [`db`], [`postgres` com versão _major_ fixada.], [5432, não publicada], [`internal`], [Volume `pgdata`; em desenvolvimento, publicada em 127.0.0.1.],
+  [`backup`], [Imagem própria com cliente do PostgreSQL e agendador.], [Nenhuma], [`internal`], [Volume `backups`; retenção de 7 diários, 4 semanais e 6 mensais (@sec-backup).],
+)
+
 
 == Roteamento, cabeçalhos e TLS <sec-tls>
 #codigo([Trecho do `Caddyfile` de produção (D28, D29).], ```text

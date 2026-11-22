@@ -4,7 +4,7 @@
 
 // ───────────────────────── Dados do documento (preencher) ─────────────────────────
 #let titulo-doc = "Especificação de Requisitos de Software"
-#let subtitulo-doc = "API REST e interface web para controle de contratos, pagamentos, cooperandos e despesas de uma cooperativa de transportes"
+#let subtitulo-doc = "API REST e interface web para controle de contratos, pagamentos, cooperados e despesas de uma cooperativa de transportes"
 #let projeto-doc = "Projeto de disciplina: API REST e interface web para cooperativa de transportes"
 #let instituicao-doc = "Universidade Federal de Lavras"
 #let autores-doc = ((name: "Arthur Valadares Campideli", qualification: "Discente"),
@@ -90,7 +90,7 @@
 #resumo-relatorio(
   palavras-chave: ("Engenharia de requisitos", "API REST", "Interface web", "Cooperativa de transportes", "Contratos", "Git Flow"),
 )[
-  Este relatório formaliza os requisitos de um sistema composto por uma API REST e uma interface web para apoiar a gestão de uma cooperativa de transportes, cujo contrato de prestação de serviço é firmado entre cliente e cooperando, cabendo à cooperativa intermediar a cobrança, reter uma taxa configurável por contrato e repassar o valor líquido ao cooperando. O levantamento foi conduzido por entrevistas estruturadas com perguntas de múltipla escolha, em três rodadas, e resultou em regras de negócio, requisitos funcionais e não funcionais, casos de uso, modelo de dados com seis tabelas, contrato de recursos da API, requisitos da interface web, matriz de permissões por perfil (administrador, financeiro, motorista e cliente) e critérios de aceitação. O desenvolvimento adota o modelo em cascata, com controle de versão segundo o Git Flow. O documento serve de referência única para projeto, implementação e testes, atendendo às exigências acadêmicas de um CRUD de uma tabela e de CRUDs que relacionam ao menos três tabelas.
+  Este relatório formaliza os requisitos de um sistema composto por uma API REST e uma interface web para apoiar a gestão de uma cooperativa de transportes, cujo contrato de prestação de serviço é firmado entre cliente e cooperado, cabendo à cooperativa intermediar a cobrança, reter uma taxa configurável por contrato e repassar o valor líquido ao cooperado. O levantamento foi conduzido por entrevistas estruturadas com perguntas de múltipla escolha, em três rodadas, e resultou em regras de negócio, requisitos funcionais e não funcionais, casos de uso, modelo de dados com seis tabelas, contrato de recursos da API, requisitos da interface web, matriz de permissões por perfil (administrador, financeiro, motorista e cliente) e critérios de aceitação. O desenvolvimento adota o modelo em cascata, com controle de versão segundo o Git Flow. O documento serve de referência única para projeto, implementação e testes, atendendo às exigências acadêmicas de um CRUD de uma tabela e de CRUDs que relacionam ao menos três tabelas.
 ]
 
 #lista-ilustracoes()
@@ -150,18 +150,18 @@
 == Propósito e escopo
 Este documento formaliza os requisitos do sistema de apoio à gestão de uma cooperativa de transportes, composto por uma *API REST* e por uma *interface web* que a consome, desenvolvido como projeto da disciplina de banco de dados/desenvolvimento de APIs. Ele é a referência única para projeto, implementação e testes (modelo em cascata, @sec-processo) e é o artefato de saída da fase de levantamento. A organização dos requisitos segue as recomendações de engenharia de requisitos da norma ISO/IEC/IEEE 29148 (ISO/IEC/IEEE, 2018).
 
-O sistema cobre: cadastro e controle de acesso de usuários; cadastro de cooperandos e clientes; contratos entre cliente e cooperando com ciclo de aprovação; pagamentos programados com baixa e repasse manuais; despesas da cooperativa e dos cooperandos; e consultas/relatórios financeiros. A interface web oferece a cada perfil as telas de acesso a essas funções.
+O sistema cobre: cadastro e controle de acesso de usuários; cadastro de cooperados e clientes; contratos entre cliente e cooperado com ciclo de aprovação; pagamentos programados com baixa e repasse manuais; despesas da cooperativa e dos cooperados; e consultas/relatórios financeiros. A interface web oferece a cada perfil as telas de acesso a essas funções.
 
 == Minimundo
-A cooperativa reúne motoristas autônomos (*cooperandos*) que prestam serviços de transporte a *clientes*. O contrato de prestação é firmado *entre o cliente e o cooperando*; a cooperativa não é parte do contrato, mas intermedeia o fluxo financeiro: recebe o pagamento do cliente, retém a *taxa da cooperativa* e repassa o *valor líquido* ao cooperando. A taxa é definida por contrato, em percentual ou em valor fixo.
+A cooperativa reúne motoristas autônomos (*cooperados*) que prestam serviços de transporte a *clientes*. O contrato de prestação é firmado *entre o cliente e o cooperado*; a cooperativa não é parte do contrato, mas intermedeia o fluxo financeiro: recebe o pagamento do cliente, retém a *taxa da cooperativa* e repassa o *valor líquido* ao cooperado. A taxa é definida por contrato, em percentual ou em valor fixo.
 
-A cooperativa *não administra os veículos* dos cooperandos; portanto, veículos não são modelados. Quatro perfis interagem com o sistema: administrador da cooperativa, financeiro, motorista (cooperando) e cliente (somente consulta).
+A cooperativa *não administra os veículos* dos cooperados; portanto, veículos não são modelados. Quatro perfis interagem com o sistema: administrador da cooperativa, financeiro, motorista (cooperado) e cliente (somente consulta).
 
 == Fora de escopo
 - Cadastro e gestão de veículos, manutenção ou rotas.
 - Integração com meios de pagamento, bancos ou emissão fiscal: toda baixa e todo repasse são registrados manualmente.
 - Aplicativo móvel nativo e projeto visual (identidade visual, protótipos de alta fidelidade); a interface web é especificada por requisitos funcionais e de qualidade, não por padrão estético.
-- Abatimento automático de despesas do cooperando no repasse (despesas são informativas, ver RN09).
+- Abatimento automático de despesas do cooperado no repasse (despesas são informativas, ver RN09).
 
 == Glossário
 #figure(
@@ -170,12 +170,12 @@ A cooperativa *não administra os veículos* dos cooperandos; portanto, veículo
     fill: head-fill,
     table.header[*Termo*][*Definição*],
     [Cooperativa], [Entidade que intermedeia cobrança e coleta de taxa; é o "dono" do sistema.],
-    [Cooperando], [Motorista associado; prestador do serviço e parte do contrato.],
+    [Cooperado], [Motorista associado; prestador do serviço e parte do contrato.],
     [Cliente], [Contratante do serviço de transporte; parte do contrato.],
-    [Contrato], [Acordo entre um cliente e um cooperando, com valor, modalidade de pagamento e taxa.],
+    [Contrato], [Acordo entre um cliente e um cooperado, com valor, modalidade de pagamento e taxa.],
     [Taxa], [Valor retido pela cooperativa; percentual sobre o pagamento ou valor fixo por pagamento.],
     [Baixa], [Registro manual de que o cliente pagou uma parcela à cooperativa.],
-    [Repasse], [Registro manual de que a cooperativa transferiu o valor líquido ao cooperando.],
+    [Repasse], [Registro manual de que a cooperativa transferiu o valor líquido ao cooperado.],
     [Valor bruto / líquido], [Bruto: valor cobrado do cliente. Líquido: bruto menos a taxa.],
     [RBAC], [_Role-Based Access Control_: autorização por papel do usuário.],
     [Interface web], [Aplicação executada no navegador (SPA) que consome a API e apresenta as funções a cada perfil.],
@@ -309,9 +309,9 @@ A elicitação foi feita por *entrevista estruturada com perguntas fechadas de m
     columns: (auto, 1fr, 1fr),
     fill: head-fill, align: left,
     table.header[*Papel*][*Interesse*][*Capacidade no sistema*],
-    [Administrador], [Governança: cadastros, aprovação de contratos, visão geral.], [Gerencia usuários, cooperandos e clientes; aprova, encerra e cancela contratos; vê tudo.],
+    [Administrador], [Governança: cadastros, aprovação de contratos, visão geral.], [Gerencia usuários, cooperados e clientes; aprova, encerra e cancela contratos; vê tudo.],
     [Financeiro], [Cobrança, baixa, repasse, despesas e saldo.], [Registra baixas e repasses; lança despesas da cooperativa; emite relatórios.],
-    [Motorista (cooperando)], [Seus contratos, o que receber e suas despesas.], [Elabora e submete contratos; registra suas despesas; consulta apenas seus dados.],
+    [Motorista (cooperado)], [Seus contratos, o que receber e suas despesas.], [Elabora e submete contratos; registra suas despesas; consulta apenas seus dados.],
     [Cliente], [Acompanhar o que contratou e pagou.], [Consulta (somente leitura) seus contratos e pagamentos.],
     [Equipe de desenvolvimento / docente], [Atender à restrição acadêmica e avaliar.], [Não é ator do sistema.],
   ),
@@ -324,10 +324,10 @@ A elicitação foi feita por *entrevista estruturada com perguntas fechadas de m
     columns: (auto, 1fr, 1fr, 1fr),
     fill: head-fill, align: left,
     table.header[*Rod.*][*Pergunta*][*Decisão do stakeholder*][*Efeito na especificação*],
-    [1], [Tabelas do CRUD principal.], [Cooperando, Contrato, Pagamento, Despesa e controle de usuário/acesso.], [Seis tabelas no DER (inclui Cliente, por decisão da rodada 3).],
+    [1], [Tabelas do CRUD principal.], [Cooperado, Contrato, Pagamento, Despesa e controle de usuário/acesso.], [Seis tabelas no DER (inclui Cliente, por decisão da rodada 3).],
     [1], [Perfis de usuário.], [Administrador, Motorista, Financeiro e Cliente (consulta).], [Quatro papéis RBAC; matriz de permissões (@sec-perm).],
     [1], [Cobrança da taxa.], [Configurável: percentual ou fixo, por contrato.], [Campos `taxa_tipo` e `taxa_valor` no contrato; RN02 e RN03.],
-    [2], [Fluxo do dinheiro.], [Cliente paga à cooperativa, que repassa o líquido ao cooperando.], [Pagamento com baixa e repasse; RN04 e RN07.],
+    [2], [Fluxo do dinheiro.], [Cliente paga à cooperativa, que repassa o líquido ao cooperado.], [Pagamento com baixa e repasse; RN04 e RN07.],
     [2], [Origem das despesas.], [Ambas, distinguidas por tipo/origem.], [Campo `origem` em Despesa; RN08.],
     [2], [Ciclo do contrato.], [Rascunho → pendente de aprovação → ativo → encerrado/cancelado.], [Máquina de estados do contrato; RN12.],
     [3], [Representação do cliente.], [Tabela própria (nome, documento, contato) vinculada a um usuário e aos contratos.], [Entidade Cliente 1:1 com Usuário; RN14.],
@@ -338,7 +338,7 @@ A elicitação foi feita por *entrevista estruturada com perguntas fechadas de m
   caption: [Decisões registradas nas rodadas de elicitação.],
 )
 
-*Premissas adotadas pela equipe* (a validar com o stakeholder; ver também a seção de riscos): (P1) cooperandos e clientes são cadastrados pelo administrador juntamente com seu usuário de acesso; (P2) taxa fixa incide por pagamento (parcela); (P3) despesas do cooperando não abatem o repasse; (P4) autenticação por _token_ com expiração e autorização por papel (RBAC); (P5) a situação "em atraso" é derivada da data de vencimento, não armazenada; (P6) a interface web é uma aplicação de página única (SPA), mantida no mesmo repositório da API, que acessa dados exclusivamente por ela; (P7) há um só _front-end_, cujos menus e telas se adaptam ao papel do usuário; (P8) o uso é em navegador (computador e celular), sem aplicativo nativo.
+*Premissas adotadas pela equipe* (a validar com o stakeholder; ver também a seção de riscos): (P1) cooperados e clientes são cadastrados pelo administrador juntamente com seu usuário de acesso; (P2) taxa fixa incide por pagamento (parcela); (P3) despesas do cooperado não abatem o repasse; (P4) autenticação por _token_ com expiração e autorização por papel (RBAC); (P5) a situação "em atraso" é derivada da data de vencimento, não armazenada; (P6) a interface web é uma aplicação de página única (SPA), mantida no mesmo repositório da API, que acessa dados exclusivamente por ela; (P7) há um só _front-end_, cujos menus e telas se adaptam ao papel do usuário; (P8) o uso é em navegador (computador e celular), sem aplicativo nativo.
 
 // ───────────────────────── 4. Visão geral e casos de uso ─────────────────────────
 = Visão geral e casos de uso
@@ -383,7 +383,7 @@ Os casos de uso estão agrupados em três módulos. Todos os perfis são especia
     uc((1,0), <u1>, [UC01 Autenticar-se]),
     uc((1,1), <u2>, [UC05 Alterar própria senha]),
     uc((1,2), <u3>, [UC02 Gerenciar usuários]),
-    uc((1,3), <u4>, [UC03 Gerenciar cooperandos]),
+    uc((1,3), <u4>, [UC03 Gerenciar cooperados]),
     uc((1,4), <u5>, [UC04 Gerenciar clientes]),
     bound((<u1>, <u2>, <u3>, <u4>, <u5>)), sysname,
     edge(<u>, <u1>, "-"), edge(<u>, <u2>, "-"),
@@ -425,7 +425,7 @@ Os casos de uso estão agrupados em três módulos. Todos os perfis são especia
     actor((2,2), <f>, [Financeiro]),
     actor((2,4.5), <a>, [Administrador]),
     uc((1,0), <c1>, [UC12 Registrar baixa de pagamento]),
-    uc((1,1), <c2>, [UC13 Registrar repasse ao cooperando]),
+    uc((1,1), <c2>, [UC13 Registrar repasse ao cooperado]),
     uc((1,2), <c3>, [UC14 Consultar pagamentos]),
     uc((1,3), <c4>, [UC15 Registrar despesa]),
     uc((1,4), <c5>, [UC16 Consultar despesas]),
@@ -452,20 +452,20 @@ Os casos de uso estão agrupados em três módulos. Todos os perfis são especia
       fill: head-fill, align: left,
       table.header[*ID*][*Regra*],
       ..(
-        rn("RN01", [Todo contrato vincula exatamente um cliente e um cooperando. A cooperativa não é parte do contrato; seu papel é controlar o fluxo financeiro e coletar a taxa.]),
+        rn("RN01", [Todo contrato vincula exatamente um cliente e um cooperado. A cooperativa não é parte do contrato; seu papel é controlar o fluxo financeiro e coletar a taxa.]),
         rn("RN02", [A taxa é definida por contrato: `taxa_tipo` ∈ {PERCENTUAL, FIXO}. PERCENTUAL exige `taxa_valor` maior que 0 e menor ou igual a 100; FIXO exige `taxa_valor` > 0 (valor em reais por pagamento). A taxa só pode ser alterada enquanto o contrato estiver em RASCUNHO.]),
         rn("RN03", [`valor_taxa` = `valor_bruto` × `taxa_valor` ÷ 100 (percentual) ou `taxa_valor` (fixo), arredondado a 2 casas; `valor_liquido` = `valor_bruto` − `valor_taxa`. A taxa nunca pode exceder o valor bruto. Os três valores são gravados no pagamento na aprovação e congelados.]),
-        rn("RN04", [O cliente paga à cooperativa. Cada pagamento tem dois eventos manuais e sequenciais: _baixa_ (recebimento do cliente) e _repasse_ (transferência do líquido ao cooperando).]),
+        rn("RN04", [O cliente paga à cooperativa. Cada pagamento tem dois eventos manuais e sequenciais: _baixa_ (recebimento do cliente) e _repasse_ (transferência do líquido ao cooperado).]),
         rn("RN05", [A modalidade do contrato é ÚNICO (1 pagamento, vencimento em `data_inicio`) ou MENSAL (N parcelas mensais, N ≥ 2, com `dia_vencimento` entre 1 e 28, a primeira na primeira ocorrência do dia em ou após `data_inicio`). Os pagamentos são gerados na aprovação, e a soma dos brutos é igual ao `valor_total` (resíduo de arredondamento na última parcela).]),
         rn("RN06", [Só contratos ATIVOS aceitam baixa. O encerramento exige que nenhum pagamento esteja PREVISTO ou PAGO sem repasse. O cancelamento muda para CANCELADO os pagamentos PREVISTO; pagamentos já PAGO ou REPASSADO são preservados.]),
         rn("RN07", [O repasse só é permitido sobre pagamento PAGO. Ao repassar, o valor transferido é o `valor_liquido` registrado.]),
-        rn("RN08", [Toda despesa tem `origem`: COOPERATIVA (sem cooperando e sem contrato) ou COOPERANDO (cooperando obrigatório; contrato opcional, e, se informado, deve pertencer ao cooperando). Valor > 0; categoria pertence a um conjunto fixo (combustível, pedágio, manutenção, administrativa, tributos, outros).]),
-        rn("RN09", [Despesas de cooperando são informativas: não reduzem o valor repassado.]),
+        rn("RN08", [Toda despesa tem `origem`: COOPERATIVA (sem cooperado e sem contrato) ou COOPERADO (cooperado obrigatório; contrato opcional, e, se informado, deve pertencer ao cooperado). Valor > 0; categoria pertence a um conjunto fixo (combustível, pedágio, manutenção, administrativa, tributos, outros).]),
+        rn("RN09", [Despesas de cooperado são informativas: não reduzem o valor repassado.]),
         rn("RN10", [Escopo de dados: o motorista acessa apenas seus contratos, pagamentos e despesas; o cliente acessa apenas seus contratos e pagamentos (leitura); o motorista também consulta os dados de identificação dos clientes para elaborar contratos; administrador e financeiro acessam todos os dados conforme @sec-perm. Recurso fora do escopo responde 404.]),
-        rn("RN11", [Não há exclusão física de registros referenciados. Usuários, cooperandos e clientes são inativados; contratos só são excluídos em RASCUNHO; pagamentos nunca são excluídos.]),
+        rn("RN11", [Não há exclusão física de registros referenciados. Usuários, cooperados e clientes são inativados; contratos só são excluídos em RASCUNHO; pagamentos nunca são excluídos.]),
         rn("RN12", [Ciclo do contrato: RASCUNHO → PENDENTE_APROVACAO → ATIVO → ENCERRADO; CANCELADO a partir de qualquer estado não final. Reprovar devolve a RASCUNHO com `motivo_reprovacao`. Somente RASCUNHO é editável. Somente o administrador aprova, reprova, encerra ou cancela. Quem elabora o contrato não aprova o próprio.]),
-        rn("RN13", [Cooperando ou cliente inativo não pode ser vinculado a novo contrato.]),
-        rn("RN14", [Usuário de papel MOTORISTA está vinculado a exatamente um cooperando e o de papel CLIENTE a exatamente um cliente (relação 1:1); ADMINISTRADOR e FINANCEIRO não têm vínculo. E-mail é único.]),
+        rn("RN13", [Cooperado ou cliente inativo não pode ser vinculado a novo contrato.]),
+        rn("RN14", [Usuário de papel MOTORISTA está vinculado a exatamente um cooperado e o de papel CLIENTE a exatamente um cliente (relação 1:1); ADMINISTRADOR e FINANCEIRO não têm vínculo. E-mail é único.]),
         rn("RN15", [Aprovação, baixa e repasse registram o usuário responsável e o instante da ação.]),
       ).flatten(),
     )
@@ -492,29 +492,29 @@ Prioridade: *E* = essencial, *I* = importante, *D* = desejável (escala em três
   rf("RF-USR-04", [Inativar e reativar usuário; remoção física apenas sem vínculos.], "E", "ADM", "RN11"),
 )
 
-== Cooperandos e clientes
+== Cooperados e clientes
 #reqs(
-  rf("RF-COO-01", [Cadastrar cooperando (matrícula, nome, CPF, telefone, data de ingresso) junto com seu usuário MOTORISTA, em uma única transação.], "E", "ADM", "RN14"),
-  rf("RF-COO-02", [Listar e consultar cooperandos por nome, matrícula e situação.], "E", "ADM, FIN", "—"),
-  rf("RF-COO-03", [Atualizar dados do cooperando.], "E", "ADM", "—"),
-  rf("RF-COO-04", [Inativar cooperando, bloqueando novos contratos.], "E", "ADM", "RN11, RN13"),
+  rf("RF-COO-01", [Cadastrar cooperado (matrícula, nome, CPF, telefone, data de ingresso) junto com seu usuário MOTORISTA, em uma única transação.], "E", "ADM", "RN14"),
+  rf("RF-COO-02", [Listar e consultar cooperados por nome, matrícula e situação.], "E", "ADM, FIN", "—"),
+  rf("RF-COO-03", [Atualizar dados do cooperado.], "E", "ADM", "—"),
+  rf("RF-COO-04", [Inativar cooperado, bloqueando novos contratos.], "E", "ADM", "RN11, RN13"),
   rf("RF-CLI-01", [Cadastrar cliente (nome, CPF/CNPJ, telefone, e-mail) junto com seu usuário CLIENTE, em uma única transação.], "E", "ADM", "RN14"),
   rf("RF-CLI-02", [Listar e consultar clientes por nome, documento e situação (ao motorista, apenas identificação).], "E", "ADM, FIN, MOT", "—"),
   rf("RF-CLI-03", [Atualizar dados do cliente.], "E", "ADM", "—"),
   rf("RF-CLI-04", [Inativar cliente, bloqueando novos contratos.], "E", "ADM", "RN11, RN13"),
 )
 
-== Contratos — _CRUD relacionado (Contrato, Cooperando, Cliente, Pagamento)_
+== Contratos — _CRUD relacionado (Contrato, Cooperado, Cliente, Pagamento)_
 #reqs(
-  rf("RF-CTR-01", [Criar contrato em RASCUNHO informando cooperando, cliente, descrição do serviço, valor total, modalidade, parcelas, dia de vencimento, vigência e taxa (tipo e valor).], "E", "MOT, ADM", "RN01–03, RN05, RN13"),
+  rf("RF-CTR-01", [Criar contrato em RASCUNHO informando cooperado, cliente, descrição do serviço, valor total, modalidade, parcelas, dia de vencimento, vigência e taxa (tipo e valor).], "E", "MOT, ADM", "RN01–03, RN05, RN13"),
   rf("RF-CTR-02", [Editar contrato em RASCUNHO.], "E", "MOT, ADM", "RN02, RN12"),
   rf("RF-CTR-03", [Submeter à aprovação (RASCUNHO → PENDENTE_APROVACAO), validando a completude dos dados.], "E", "MOT, ADM", "RN12"),
   rf("RF-CTR-04", [Aprovar contrato (→ ATIVO), gerar o cronograma de pagamentos na mesma transação e registrar o aprovador.], "E", "ADM", "RN03, RN05, RN12, RN15"),
   rf("RF-CTR-05", [Reprovar contrato com motivo (→ RASCUNHO).], "E", "ADM", "RN12"),
   rf("RF-CTR-06", [Encerrar contrato ATIVO (→ ENCERRADO).], "E", "ADM", "RN06"),
   rf("RF-CTR-07", [Cancelar contrato (→ CANCELADO), cancelando os pagamentos PREVISTO.], "E", "ADM", "RN06"),
-  rf("RF-CTR-08", [Listar contratos com filtros (situação, cooperando, cliente, período), paginados e limitados ao escopo do papel.], "E", "Todos", "RN10"),
-  rf("RF-CTR-09", [Detalhar contrato com dados do cooperando, do cliente e lista de pagamentos.], "E", "Todos", "RN10"),
+  rf("RF-CTR-08", [Listar contratos com filtros (situação, cooperado, cliente, período), paginados e limitados ao escopo do papel.], "E", "Todos", "RN10"),
+  rf("RF-CTR-09", [Detalhar contrato com dados do cooperado, do cliente e lista de pagamentos.], "E", "Todos", "RN10"),
   rf("RF-CTR-10", [Excluir contrato em RASCUNHO.], "I", "MOT, ADM", "RN11"),
 )
 
@@ -522,15 +522,15 @@ Prioridade: *E* = essencial, *I* = importante, *D* = desejável (escala em três
 #reqs(
   rf("RF-PAG-01", [Listar pagamentos com filtros (contrato, situação, vencimento, em atraso), limitados ao escopo do papel.], "E", "Todos", "RN10"),
   rf("RF-PAG-02", [Registrar baixa (PREVISTO → PAGO) com data de recebimento e observação.], "E", "FIN", "RN04, RN06, RN15"),
-  rf("RF-PAG-03", [Registrar repasse ao cooperando (PAGO → REPASSADO) com data.], "E", "FIN", "RN07, RN15"),
+  rf("RF-PAG-03", [Registrar repasse ao cooperado (PAGO → REPASSADO) com data.], "E", "FIN", "RN07, RN15"),
   rf("RF-PAG-04", [Estornar baixa ainda não repassada (PAGO → PREVISTO), com justificativa.], "D", "ADM, FIN", "RN15"),
   rf("RF-PAG-05", [Consultar pagamentos em atraso (vencimento anterior a hoje e situação PREVISTO).], "I", "ADM, FIN", "—"),
 )
 
-== Despesas — _CRUD relacionado (Despesa, Cooperando, Contrato, Usuário)_
+== Despesas — _CRUD relacionado (Despesa, Cooperado, Contrato, Usuário)_
 #reqs(
-  rf("RF-DSP-01", [Registrar despesa (origem, categoria, descrição, valor, data; cooperando e contrato quando aplicável). Financeiro e administrador lançam as da cooperativa; o motorista lança as próprias.], "E", "FIN, ADM, MOT", "RN08"),
-  rf("RF-DSP-02", [Listar despesas com filtros (origem, categoria, cooperando, período), limitadas ao escopo do papel.], "E", "ADM, FIN, MOT", "RN10"),
+  rf("RF-DSP-01", [Registrar despesa (origem, categoria, descrição, valor, data; cooperado e contrato quando aplicável). Financeiro e administrador lançam as da cooperativa; o motorista lança as próprias.], "E", "FIN, ADM, MOT", "RN08"),
+  rf("RF-DSP-02", [Listar despesas com filtros (origem, categoria, cooperado, período), limitadas ao escopo do papel.], "E", "ADM, FIN, MOT", "RN10"),
   rf("RF-DSP-03", [Atualizar despesa (o motorista, apenas as suas).], "E", "ADM, FIN, MOT", "RN08, RN10"),
   rf("RF-DSP-04", [Excluir despesa (o motorista, apenas as suas).], "I", "ADM, FIN, MOT", "RN10"),
   rf("RF-DSP-05", [Totalizar despesas por categoria e período.], "I", "ADM, FIN, MOT", "RN10"),
@@ -538,9 +538,9 @@ Prioridade: *E* = essencial, *I* = importante, *D* = desejável (escala em três
 
 == Relatórios
 #reqs(
-  rf("RF-REL-01", [Extrato do cooperando no período: pagamentos (bruto, taxa, líquido, situação do repasse) e despesas.], "I", "MOT, ADM, FIN", "RN09, RN10"),
+  rf("RF-REL-01", [Extrato do cooperado no período: pagamentos (bruto, taxa, líquido, situação do repasse) e despesas.], "I", "MOT, ADM, FIN", "RN09, RN10"),
   rf("RF-REL-02", [Resumo financeiro da cooperativa no período: taxas arrecadadas, valores a repassar e repassados, despesas da cooperativa e saldo.], "I", "ADM, FIN", "RN03, RN09"),
-  rf("RF-REL-03", [Inadimplência: pagamentos em atraso agrupados por cliente e por cooperando.], "D", "ADM, FIN", "—"),
+  rf("RF-REL-03", [Inadimplência: pagamentos em atraso agrupados por cliente e por cooperado.], "D", "ADM, FIN", "—"),
   rf("RF-REL-04", [Indicadores do painel inicial conforme o papel: contratos pendentes de aprovação, pagamentos a receber, em atraso e a repassar, contratos ativos e próximos vencimentos.], "I", "Todos", "RN10"),
 )
 
@@ -549,13 +549,13 @@ A interface é uma aplicação de página única que consome exclusivamente a AP
 #reqs(
   rf("RF-WEB-01", [Oferecer tela de _login_ e opção de _logout_; manter a sessão enquanto o _token_ for válido e redirecionar ao _login_ quando a API responder 401.], "E", "Todos", "RF-AUT-01"),
   rf("RF-WEB-02", [Exibir menus, telas e botões apenas para as funções permitidas ao papel do usuário.], "E", "Todos", "RN10, RN12"),
-  rf("RF-WEB-03", [Fornecer listagens de usuários, cooperandos, clientes, contratos, pagamentos e despesas com paginação, filtros e ordenação.], "E", "Conforme papel", "RNF-08"),
+  rf("RF-WEB-03", [Fornecer listagens de usuários, cooperados, clientes, contratos, pagamentos e despesas com paginação, filtros e ordenação.], "E", "Conforme papel", "RNF-08"),
   rf("RF-WEB-04", [Fornecer formulários de cadastro e edição com validação prévia no navegador e exibição, junto ao campo, dos erros devolvidos pela API.], "E", "ADM, FIN, MOT", "RN02–RN08, RNF-07"),
-  rf("RF-WEB-05", [Exibir o detalhe do contrato (cooperando, cliente e cronograma de pagamentos) com as ações de transição disponíveis para o status e o papel: submeter, aprovar, reprovar (com motivo), encerrar e cancelar.], "E", "Todos", "RN12"),
+  rf("RF-WEB-05", [Exibir o detalhe do contrato (cooperado, cliente e cronograma de pagamentos) com as ações de transição disponíveis para o status e o papel: submeter, aprovar, reprovar (com motivo), encerrar e cancelar.], "E", "Todos", "RN12"),
   rf("RF-WEB-06", [Permitir ao financeiro registrar baixa e repasse a partir da lista de pagamentos, destacando os pagamentos em atraso.], "E", "FIN", "RN04, RN07"),
-  rf("RF-WEB-07", [Permitir lançar, editar e excluir despesas, com campos que se adaptam à origem (cooperativa ou cooperando).], "E", "ADM, FIN, MOT", "RN08"),
+  rf("RF-WEB-07", [Permitir lançar, editar e excluir despesas, com campos que se adaptam à origem (cooperativa ou cooperado).], "E", "ADM, FIN, MOT", "RN08"),
   rf("RF-WEB-08", [Apresentar painel inicial com os indicadores de RF-REL-04 próprios do papel.], "I", "Todos", "RF-REL-04"),
-  rf("RF-WEB-09", [Apresentar telas de extrato do cooperando, resumo financeiro e inadimplência, com seleção de período.], "I", "MOT, ADM, FIN", "RF-REL-01 a 03"),
+  rf("RF-WEB-09", [Apresentar telas de extrato do cooperado, resumo financeiro e inadimplência, com seleção de período.], "I", "MOT, ADM, FIN", "RF-REL-01 a 03"),
   rf("RF-WEB-10", [Pedir confirmação antes de ações irreversíveis (cancelar, excluir, estornar) e informar o resultado de cada operação.], "E", "Todos", "—"),
   rf("RF-WEB-11", [Apresentar ao cliente apenas consulta, sem controles de criação ou edição.], "E", "CLI", "RN10"),
 )
@@ -575,7 +575,7 @@ A interface é uma aplicação de página única que consome exclusivamente a AP
         rnf("RNF-02", [Segurança], [_Token_ com expiração máxima de 60 min; HTTPS na implantação.], [Teste]),
         rnf("RNF-03", [Segurança], [401 para requisição não autenticada; 403 para papel sem permissão; 404 para recurso fora do escopo.], [Teste de integração]),
         rnf("RNF-04", [Integridade], [Valores monetários em `DECIMAL(12,2)` (nunca ponto flutuante); chaves estrangeiras, unicidade e `CHECK` no banco.], [Inspeção do esquema]),
-        rnf("RNF-05", [Integridade], [Operações compostas (aprovação, cadastro de cooperando/cliente com usuário) em transação atômica.], [Teste de integração]),
+        rnf("RNF-05", [Integridade], [Operações compostas (aprovação, cadastro de cooperado/cliente com usuário) em transação atômica.], [Teste de integração]),
         rnf("RNF-06", [Padrão REST], [Recursos como substantivos no plural; verbos HTTP semânticos; _status_ 200, 201, 204, 400, 401, 403, 404, 409 e 422; JSON em UTF-8, conforme o estilo REST (FIELDING, 2000).], [Revisão do OpenAPI]),
         rnf("RNF-07", [Erros], [Corpo de erro padronizado conforme a RFC 9457 (NOTTINGHAM; WILDE; DALAL, 2023), com lista de campos inválidos.], [Teste]),
         rnf("RNF-08", [Usabilidade da API], [Listagens paginadas (`page`, `size`, máximo 100) e ordenáveis.], [Teste]),
@@ -607,7 +607,7 @@ A interface é uma aplicação de página única que consome exclusivamente a AP
     fill: head-fill, align: left,
     table.header[*Exigência da disciplina*][*Como é atendida*][*Requisitos*],
     [CRUD de uma tabela], [Módulo de Usuários, tabela independente (papel como enumeração).], [RF-USR-01 a 04],
-    [CRUD relacionando ao menos 3 tabelas], [Contratos: `contrato` + `cooperando` + `cliente` + `pagamento` (4 tabelas). Despesas: `despesa` + `cooperando` + `contrato` + `usuario` (4 tabelas).], [RF-CTR-01 a 10; RF-DSP-01 a 05],
+    [CRUD relacionando ao menos 3 tabelas], [Contratos: `contrato` + `cooperado` + `cliente` + `pagamento` (4 tabelas). Despesas: `despesa` + `cooperado` + `contrato` + `usuario` (4 tabelas).], [RF-CTR-01 a 10; RF-DSP-01 a 05],
     [Sem gestão de veículos], [Nenhuma entidade de veículo; dados do serviço ficam na descrição do contrato.], [@sec-rn (RN01)],
     [Sem integrações externas], [Baixa e repasse manuais.], [RF-PAG-02, RF-PAG-03],
     [Interface web], [Aplicação de página única que consome a API e exibe as funções por papel.], [RF-WEB-01 a 11; RNF-16 a 21],
@@ -761,14 +761,14 @@ O modelo segue a abordagem entidade-relacionamento e o mapeamento relacional des
 #figure(
   diagram(
     ..nstyle, spacing: (2.1cm, 1.0cm),
-    en((1,0), "usuario"), en((0,0), "cliente"), en((2,0), "cooperando"),
+    en((1,0), "usuario"), en((0,0), "cliente"), en((2,0), "cooperado"),
     en((1,1), "contrato"), en((1,2), "pagamento"), en((2,2), "despesa"),
     ..rel(<usuario>, <cliente>, "1", "1", "acessa"),
-    ..rel(<usuario>, <cooperando>, "1", "1", "acessa"),
+    ..rel(<usuario>, <cooperado>, "1", "1", "acessa"),
     ..rel(<cliente>, <contrato>, "1", "N", "contrata"),
-    ..rel(<cooperando>, <contrato>, "1", "N", "executa"),
+    ..rel(<cooperado>, <contrato>, "1", "N", "executa"),
     ..rel(<contrato>, <pagamento>, "1", "N", "gera"),
-    ..rel(<cooperando>, <despesa>, "0..1", "N", "origina"),
+    ..rel(<cooperado>, <despesa>, "0..1", "N", "origina"),
     ..rel(<contrato>, <despesa>, "0..1", "N", "associa"),
   ),
   caption: [Diagrama entidade-relacionamento (PK = chave primária, FK = estrangeira, UK = única). Veículos não são modelados.],
@@ -838,13 +838,13 @@ O modelo segue a abordagem entidade-relacionamento e o mapeamento relacional des
     node((1,0), [`valor_liquido = valor_bruto − valor_taxa` (RN03)], stroke: none, inset: 0pt),
     node((0,1), [*Cliente*\ paga o valor bruto], name: <c>, width: 2.7cm),
     node((1,1), [*Cooperativa*\ recebe, dá baixa e retém a taxa], name: <k>, width: 3.2cm, stroke: 1.1pt),
-    node((2,1), [*Cooperando*\ recebe o valor líquido], name: <o>, width: 2.7cm),
+    node((2,1), [*Cooperado*\ recebe o valor líquido], name: <o>, width: 2.7cm),
     node((1,2), [*Receita da cooperativa*\ taxa (percentual ou fixa)], name: <r>, width: 3.4cm),
     edge(<c>, <k>, "-|>", label: [① baixa\ PREVISTO → PAGO], label-side: left),
     edge(<k>, <o>, "-|>", label: [② repasse\ PAGO → REPASSADO], label-side: left),
     edge(<k>, <r>, "-|>", label: [taxa retida], label-side: right),
   ),
-  caption: [Fluxo do dinheiro: o contrato é entre cliente e cooperando; a cooperativa intermedeia.],
+  caption: [Fluxo do dinheiro: o contrato é entre cliente e cooperado; a cooperativa intermedeia.],
 )
 
 == Sequência do ciclo de vida de um contrato
@@ -881,7 +881,7 @@ O modelo segue a abordagem entidade-relacionamento e o mapeamento relacional des
     node((0,3), [*Login*], name: <login>, width: 1.6cm),
     node((1,3), [*Painel inicial*\ indicadores\ por papel], name: <painel>, width: 2.4cm),
     node((2,0), [*Usuários*\ ADM], name: <m0>, width: 3.0cm),
-    node((2,1), [*Cooperandos*\ ADM, FIN; MOT: próprio], name: <m1>, width: 3.0cm),
+    node((2,1), [*Cooperados*\ ADM, FIN; MOT: próprio], name: <m1>, width: 3.0cm),
     node((2,2), [*Clientes*\ ADM, FIN, MOT; CLI: próprio], name: <m2>, width: 3.0cm),
     node((2,3), [*Contratos*\ todos os papéis], name: <m3>, width: 3.0cm),
     node((2,4), [*Pagamentos*\ todos os papéis], name: <m4>, width: 3.0cm),
@@ -923,19 +923,19 @@ Base `/api/v1`; representação JSON (UTF-8); identificadores numéricos; datas 
         ep("GET", "/usuarios/{id}", [Consulta usuário.], "ADM", "USR-02"),
         ep("PUT", "/usuarios/{id}", [Atualiza usuário.], "ADM", "USR-03"),
         ep("PATCH", "/usuarios/{id}/situacao", [Inativa ou reativa usuário.], "ADM", "USR-04"),
-        ep("POST", "/cooperandos", [Cadastra cooperando e usuário (transação).], "ADM", "COO-01"),
-        ep("GET", "/cooperandos", [Lista cooperandos.], "ADM, FIN", "COO-02"),
-        ep("GET", "/cooperandos/{id}", [Consulta cooperando (o motorista, apenas o próprio).], "ADM, FIN, MOT", "COO-02"),
-        ep("PUT", "/cooperandos/{id}", [Atualiza cooperando.], "ADM", "COO-03"),
-        ep("PATCH", "/cooperandos/{id}/situacao", [Inativa ou reativa cooperando.], "ADM", "COO-04"),
+        ep("POST", "/cooperados", [Cadastra cooperado e usuário (transação).], "ADM", "COO-01"),
+        ep("GET", "/cooperados", [Lista cooperados.], "ADM, FIN", "COO-02"),
+        ep("GET", "/cooperados/{id}", [Consulta cooperado (o motorista, apenas o próprio).], "ADM, FIN, MOT", "COO-02"),
+        ep("PUT", "/cooperados/{id}", [Atualiza cooperado.], "ADM", "COO-03"),
+        ep("PATCH", "/cooperados/{id}/situacao", [Inativa ou reativa cooperado.], "ADM", "COO-04"),
         ep("POST", "/clientes", [Cadastra cliente e usuário (transação).], "ADM", "CLI-01"),
         ep("GET", "/clientes", [Lista clientes.], "ADM, FIN, MOT", "CLI-02"),
         ep("GET", "/clientes/{id}", [Consulta cliente (o cliente, apenas o próprio).], "ADM, FIN, MOT, CLI", "CLI-02"),
         ep("PUT", "/clientes/{id}", [Atualiza cliente.], "ADM", "CLI-03"),
         ep("PATCH", "/clientes/{id}/situacao", [Inativa ou reativa cliente.], "ADM", "CLI-04"),
         ep("POST", "/contratos", [Cria contrato em RASCUNHO.], "MOT, ADM", "CTR-01"),
-        ep("GET", "/contratos", [Lista contratos (filtros: status, cooperando, cliente, período).], "Todos", "CTR-08"),
-        ep("GET", "/contratos/{id}", [Detalha contrato com cooperando, cliente e pagamentos.], "Todos", "CTR-09"),
+        ep("GET", "/contratos", [Lista contratos (filtros: status, cooperado, cliente, período).], "Todos", "CTR-08"),
+        ep("GET", "/contratos/{id}", [Detalha contrato com cooperado, cliente e pagamentos.], "Todos", "CTR-09"),
         ep("PUT", "/contratos/{id}", [Edita contrato em RASCUNHO.], "MOT, ADM", "CTR-02"),
         ep("DELETE", "/contratos/{id}", [Exclui contrato em RASCUNHO.], "MOT, ADM", "CTR-10"),
         ep("POST", "/contratos/{id}/submissao", [RASCUNHO → PENDENTE_APROVACAO.], "MOT, ADM", "CTR-03"),
@@ -950,12 +950,12 @@ Base `/api/v1`; representação JSON (UTF-8); identificadores numéricos; datas 
         ep("POST", "/pagamentos/{id}/repasse", [PAGO → REPASSADO.], "FIN", "PAG-03"),
         ep("POST", "/pagamentos/{id}/estorno", [PAGO → PREVISTO (corpo: justificativa).], "ADM, FIN", "PAG-04"),
         ep("POST", "/despesas", [Registra despesa.], "ADM, FIN, MOT", "DSP-01"),
-        ep("GET", "/despesas", [Lista despesas (filtros: origem, categoria, cooperando, período).], "ADM, FIN, MOT", "DSP-02"),
+        ep("GET", "/despesas", [Lista despesas (filtros: origem, categoria, cooperado, período).], "ADM, FIN, MOT", "DSP-02"),
         ep("GET", "/despesas/{id}", [Consulta despesa.], "ADM, FIN, MOT", "DSP-02"),
         ep("PUT", "/despesas/{id}", [Atualiza despesa.], "ADM, FIN, MOT", "DSP-03"),
         ep("DELETE", "/despesas/{id}", [Exclui despesa.], "ADM, FIN, MOT", "DSP-04"),
         ep("GET", "/despesas/totais", [Totais por categoria e período.], "ADM, FIN, MOT", "DSP-05"),
-        ep("GET", "/cooperandos/{id}/extrato", [Extrato do cooperando no período.], "ADM, FIN, MOT", "REL-01"),
+        ep("GET", "/cooperados/{id}/extrato", [Extrato do cooperado no período.], "ADM, FIN, MOT", "REL-01"),
         ep("GET", "/relatorios/resumo-financeiro", [Resumo financeiro da cooperativa.], "ADM, FIN", "REL-02"),
         ep("GET", "/relatorios/inadimplencia", [Pagamentos em atraso agrupados.], "ADM, FIN", "REL-03"),
         ep("GET", "/painel/indicadores", [Indicadores do painel conforme o papel.], "Todos", "REL-04"),
@@ -981,8 +981,8 @@ Base `/api/v1`; representação JSON (UTF-8); identificadores numéricos; datas 
       ..(
         perm([Usuários: criar, listar, editar, inativar], "T", "—", "—", "—"),
         perm([Alterar a própria senha], "P", "P", "P", "P"),
-        perm([Cooperandos: criar, editar, inativar], "T", "—", "—", "—"),
-        perm([Cooperandos: consultar], "T", "T", "P", "—"),
+        perm([Cooperados: criar, editar, inativar], "T", "—", "—", "—"),
+        perm([Cooperados: consultar], "T", "T", "P", "—"),
         perm([Clientes: criar, editar, inativar], "T", "—", "—", "—"),
         perm([Clientes: consultar], "T", "T", "T (identificação)", "P"),
         perm([Contratos: criar, editar e excluir rascunho; submeter], "T", "—", "P", "—"),
@@ -991,9 +991,9 @@ Base `/api/v1`; representação JSON (UTF-8); identificadores numéricos; datas 
         perm([Pagamentos: consultar], "T", "T", "P", "P"),
         perm([Pagamentos: baixa e repasse], "—", "T", "—", "—"),
         perm([Pagamentos: estorno de baixa], "T", "T", "—", "—"),
-        perm([Despesas: registrar, editar, excluir], "T", "T", "P (origem COOPERANDO)", "—"),
+        perm([Despesas: registrar, editar, excluir], "T", "T", "P (origem COOPERADO)", "—"),
         perm([Despesas: consultar e totalizar], "T", "T", "P", "—"),
-        perm([Relatório: extrato do cooperando], "T", "T", "P", "—"),
+        perm([Relatório: extrato do cooperado], "T", "T", "P", "—"),
         perm([Relatórios: resumo financeiro e inadimplência], "T", "T", "—", "—"),
       ).flatten(),
     )
@@ -1017,7 +1017,7 @@ Cenários mínimos, no formato _dado–quando–então_, que servirão de base a
       [CA-03], [Pagamento PREVISTO.], [O financeiro tenta registrar repasse.], [`409`; situação permanece PREVISTO (RN07).],
       [CA-04], [Contrato do motorista B.], [O motorista A consulta esse contrato.], [`404` (RN10, RNF-03).],
       [CA-05], [Contrato PENDENTE.], [O motorista tenta aprovar.], [`403`; contrato permanece PENDENTE (RN12).],
-      [CA-06], [Despesa de origem COOPERATIVA.], [Informa-se `cooperando_id`.], [`422` (RN08).],
+      [CA-06], [Despesa de origem COOPERATIVA.], [Informa-se `cooperado_id`.], [`422` (RN08).],
       [CA-07], [Contrato ATIVO com pagamento PAGO e sem repasse.], [O administrador tenta encerrar.], [`409` (RN06).],
       [CA-08], [Motorista autenticado na interface.], [Abre o detalhe de um contrato PENDENTE.], [Nenhuma ação de aprovar ou reprovar é exibida (RF-WEB-02; RN12).],
       [CA-09], [Formulário de contrato com taxa fixa maior que a parcela.], [O usuário envia e a API responde `422`.], [A mensagem aparece junto ao campo `taxa_valor` (RF-WEB-04).],

@@ -367,11 +367,43 @@ O sistema é formado pela *interface web*, executada no navegador, e pela *API R
 == Casos de uso
 Os casos de uso estão agrupados em três módulos. Todos os perfis são especializações de _Usuário_ autenticado (herdam UC01 e UC05). Todos os casos de uso são realizados por meio da interface web.
 
+Cada módulo é seguido de um quadro de detalhamento que indica, para cada caso de uso, a tela ou o caso de uso de *origem*, a *ação* do usuário, o *resultado* e o *destino* para onde a interface o conduz. As telas citadas correspondem às do mapa de navegação (@sec-navegacao). Salvo indicação em contrário, o usuário só alcança o caso de uso se autenticado (UC01) e se o seu papel o permitir (@sec-perm); toda falha de validação ou de regra de negócio mantém o usuário na mesma tela, com a mensagem junto ao campo (RF-WEB-04).
+
 #let actor(pos, name, label) = node(pos, [«ator»\ *#label*], name: name)
 #let uc(pos, name, label) = node(pos, text(size: 7.5pt, label), name: name, shape: fletcher.shapes.pill, inset: 6pt, fill: white, width: 4.6cm)
 #let bound(names) = node(enclose: names, stroke: 0.7pt + luma(90), inset: 10pt, snap: false, fill: luma(250))
 #let sysname = node((1,-1), box(inset: (bottom: 14pt), text(size: 7.5pt, weight: "bold")[Sistema: API da Cooperativa]), stroke: none, inset: 0pt)
 #let uspacing = (2.2cm, 0.28cm)
+
+// Quadro de detalhamento de casos de uso: um UC por bloco, uma linha por ação (origem → ação → resultado → destino).
+#let uc-quadro(legenda, ucs) = figure(
+  kind: table,
+  {
+    set text(size: 7.5pt)
+    table(
+      columns: (auto, auto, 1fr, 1fr, 1.2fr, 1fr, 1fr),
+      fill: head-fill, align: left, inset: 3.5pt,
+      table.header[*UC*][*Ator(es)*][*Pré-condição*][*Origem*][*Ação do usuário*][*Resultado*][*Destino*],
+      ..ucs.map(u => {
+        let n = u.acoes.len()
+        let cells = ()
+        for (i, a) in u.acoes.enumerate() {
+          if i == 0 {
+            cells.push(table.cell(rowspan: n)[#raw(u.id) \ #u.nome])
+            cells.push(table.cell(rowspan: n)[#u.ator])
+            cells.push(table.cell(rowspan: n)[#u.pre])
+          }
+          cells.push(a.at(0))
+          cells.push(a.at(1))
+          cells.push(a.at(2))
+          cells.push(a.at(3))
+        }
+        cells
+      }).flatten(),
+    )
+  },
+  caption: legenda,
+)
 
 #block(sticky: true)[#set par(first-line-indent: 0pt)
 *Módulo A — acesso e cadastros* (inclui o CRUD de uma tabela: Usuário).]
@@ -392,8 +424,44 @@ Os casos de uso estão agrupados em três módulos. Todos os perfis são especia
   caption: [Casos de uso do módulo de acesso e cadastros.],
 )
 
+#uc-quadro([Detalhamento dos casos de uso do módulo de acesso e cadastros.], (
+  (id: "UC01", nome: [Autenticar-se], ator: [Todos],
+   pre: [Possuir usuário ativo.],
+   acoes: (
+     ([Acesso inicial ao sistema; redirecionamento da API por 401 (RF-WEB-01).], [Informa e-mail e senha e envia o formulário de _login_.], [_Token_ emitido; sessão iniciada.], [Painel inicial, a partir do qual se acessa cada módulo conforme o papel.]),
+     ([Tela de _login_.], [Informa credenciais inválidas.], [Acesso negado, com mensagem de erro.], [Permanece em UC01.]),
+   )),
+  (id: "UC05", nome: [Alterar própria senha], ator: [Todos],
+   pre: [Estar autenticado.],
+   acoes: (
+     ([Menu do usuário, em qualquer tela.], [Informa a senha atual e a nova senha e confirma.], [Senha atualizada.], [Tela em que estava (ou painel inicial).]),
+     ([Formulário de alteração de senha.], [Informa senha atual incorreta.], [Alteração recusada, com mensagem.], [Permanece em UC05.]),
+   )),
+  (id: "UC02", nome: [Gerenciar usuários], ator: [ADM],
+   pre: [Estar autenticado como administrador.],
+   acoes: (
+     ([Painel inicial → menu Usuários.], [Filtra por papel e situação, ordena ou pagina.], [Lista atualizada.], [Permanece na listagem de usuários.]),
+     ([Listagem de usuários.], [Aciona "Novo usuário" ou "Editar" e salva o formulário.], [Usuário criado ou atualizado (RN14).], [Listagem de usuários.]),
+     ([Listagem de usuários.], [Aciona "Inativar" ou "Reativar" e confirma.], [Situação do usuário alterada (RN11).], [Listagem de usuários.]),
+   )),
+  (id: "UC03", nome: [Gerenciar cooperados], ator: [ADM],
+   pre: [Estar autenticado como administrador.],
+   acoes: (
+     ([Painel inicial → menu Cooperados.], [Filtra por nome, matrícula ou situação.], [Lista atualizada.], [Permanece na listagem de cooperados.]),
+     ([Listagem de cooperados.], [Aciona "Novo cooperado" ou "Editar" e salva o formulário.], [Cooperado e usuário MOTORISTA criados na mesma transação, ou dados atualizados (RF-COO-01, RF-COO-03).], [Listagem de cooperados.]),
+     ([Listagem de cooperados.], [Aciona "Inativar" e confirma.], [Cooperado inativo, impedido de novos contratos (RN13).], [Listagem de cooperados.]),
+   )),
+  (id: "UC04", nome: [Gerenciar clientes], ator: [ADM],
+   pre: [Estar autenticado como administrador.],
+   acoes: (
+     ([Painel inicial → menu Clientes.], [Filtra por nome, documento ou situação.], [Lista atualizada.], [Permanece na listagem de clientes.]),
+     ([Listagem de clientes.], [Aciona "Novo cliente" ou "Editar" e salva o formulário.], [Cliente e usuário CLIENTE criados na mesma transação, ou dados atualizados (RF-CLI-01, RF-CLI-03).], [Listagem de clientes.]),
+     ([Listagem de clientes.], [Aciona "Inativar" e confirma.], [Cliente inativo, impedido de novos contratos (RN13).], [Listagem de clientes.]),
+   )),
+))
+
 #block(sticky: true)[#set par(first-line-indent: 0pt)
-*Módulo B — contratos* (CRUD relacionando Contrato, Cooperando, Cliente e Pagamento).]
+*Módulo B — contratos* (CRUD relacionando Contrato, Cooperado, Cliente e Pagamento).]
 #figure(
   dg(
     spacing: uspacing,
@@ -415,6 +483,46 @@ Os casos de uso estão agrupados em três módulos. Todos os perfis são especia
   caption: [Casos de uso do módulo de contratos. O administrador também atua em UC06 e UC07.],
 )
 
+#uc-quadro([Detalhamento dos casos de uso do módulo de contratos.], (
+  (id: "UC10", nome: [Consultar contratos], ator: [MOT, CLI, ADM, FIN],
+   pre: [Estar autenticado; vê apenas os contratos do próprio escopo (RN10).],
+   acoes: (
+     ([Painel inicial (indicadores) ou menu Contratos.], [Filtra por situação, cooperado, cliente ou período.], [Lista atualizada.], [Permanece na listagem de contratos.]),
+     ([Listagem de contratos.], [Seleciona um contrato.], [Detalhe com cooperado, cliente e cronograma de pagamentos.], [Detalhe do contrato, que oferece UC06, UC07, UC08, UC09 ou UC14 conforme a situação do contrato e o papel.]),
+   )),
+  (id: "UC06", nome: [Elaborar contrato (rascunho)], ator: [MOT, ADM],
+   pre: [Cooperado e cliente ativos (RN13).],
+   acoes: (
+     ([Listagem de contratos.], [Aciona "Novo contrato", preenche o formulário e salva.], [Contrato criado em RASCUNHO (RN01 a RN03).], [Detalhe do contrato (UC10), onde se pode submeter (UC07).]),
+     ([Detalhe de contrato em RASCUNHO.], [Aciona "Editar", altera os dados e salva.], [Contrato atualizado.], [Detalhe do contrato.]),
+     ([Detalhe de contrato em RASCUNHO.], [Aciona "Excluir" e confirma (RF-CTR-10).], [Contrato excluído (RN11).], [Listagem de contratos.]),
+   )),
+  (id: "UC07", nome: [Submeter à aprovação], ator: [MOT, ADM],
+   pre: [Contrato em RASCUNHO com dados completos.],
+   acoes: (
+     ([Detalhe do contrato (UC10).], [Aciona "Submeter".], [Situação PENDENTE\_APROVACAO; contrato deixa de ser editável (RN12).], [Detalhe do contrato; fica à espera de UC08.]),
+     ([Detalhe do contrato.], [Aciona "Submeter" com dados incompletos.], [Submissão recusada (422), com os campos indicados.], [Permanece no detalhe, ou no formulário para correção (UC06).]),
+   )),
+  (id: "UC08", nome: [Aprovar ou reprovar contrato], ator: [ADM],
+   pre: [Contrato PENDENTE\_APROVACAO; o administrador não pode ser o autor do contrato (RN12).],
+   acoes: (
+     ([Detalhe do contrato (UC10), ou painel inicial (indicador de pendentes).], [Aciona "Aprovar" e confirma.], [Situação ATIVO, com aprovador e instante registrados (RN15); UC11 é executado na mesma transação.], [Detalhe do contrato, agora com o cronograma de pagamentos.]),
+     ([Detalhe do contrato.], [Aciona "Reprovar" e informa o motivo.], [Contrato volta a RASCUNHO, com o motivo registrado.], [Detalhe do contrato; o elaborador retorna a UC06 e depois a UC07.]),
+   )),
+  (id: "UC09", nome: [Encerrar ou cancelar contrato], ator: [ADM],
+   pre: [Encerrar: contrato ATIVO sem pagamento PREVISTO ou PAGO sem repasse. Cancelar: contrato em estado não final (RN06, RN12).],
+   acoes: (
+     ([Detalhe do contrato (UC10).], [Aciona "Encerrar" e confirma (RF-WEB-10).], [Situação ENCERRADO.], [Detalhe do contrato, sem ações de transição.]),
+     ([Detalhe do contrato (UC10).], [Aciona "Cancelar" e confirma.], [Situação CANCELADO; pagamentos PREVISTO passam a CANCELADO e os já pagos ou repassados são preservados.], [Detalhe do contrato, sem ações de transição.]),
+     ([Detalhe do contrato.], [Aciona "Encerrar" com pendência financeira.], [Encerramento recusado (409).], [Permanece no detalhe; o financeiro regulariza em UC12 ou UC13.]),
+   )),
+  (id: "UC11", nome: [Gerar pagamentos programados], ator: [Sistema (incluído em UC08)],
+   pre: [Aprovação do contrato em andamento.],
+   acoes: (
+     ([UC08, ao aprovar.], [Nenhuma; é executado automaticamente.], [Pagamentos PREVISTO criados com bruto, taxa e líquido congelados, na mesma transação da aprovação (RN03, RN05).], [Cronograma exibido no detalhe do contrato; pagamentos disponíveis em UC14.]),
+   )),
+))
+
 #block(sticky: true)[#set par(first-line-indent: 0pt)
 *Módulo C — financeiro* (pagamentos, repasses, despesas e relatórios).]
 #figure(
@@ -433,12 +541,52 @@ Os casos de uso estão agrupados em três módulos. Todos os perfis são especia
     bound((<c1>, <c2>, <c3>, <c4>, <c5>, <c6>)), sysname,
     edge(<f>, <c1>, "-"), edge(<f>, <c2>, "-"), edge(<f>, <c3>, "-"), edge(<f>, <c4>, "-"),
     edge(<f>, <c5>, "-"), edge(<f>, <c6>, "-"),
-    edge(<a>, <c3>, "-"), edge(<a>, <c5>, "-"), edge(<a>, <c6>, "-"),
-    edge(<m>, <c3>, "-"), edge(<m>, <c4>, "-"), edge(<m>, <c6>, "-"),
+    edge(<a>, <c3>, "-"), edge(<a>, <c4>, "-"), edge(<a>, <c5>, "-"), edge(<a>, <c6>, "-"),
+    edge(<m>, <c3>, "-"), edge(<m>, <c4>, "-"), edge(<m>, <c5>, "-"), edge(<m>, <c6>, "-"),
     edge(<c>, <c3>, "-"),
   ),
   caption: [Casos de uso do módulo financeiro. O motorista só enxerga e lança dados próprios (RN10).],
 )
+
+#uc-quadro([Detalhamento dos casos de uso do módulo financeiro.], (
+  (id: "UC14", nome: [Consultar pagamentos], ator: [FIN, ADM, MOT, CLI],
+   pre: [Estar autenticado; vê apenas os pagamentos do próprio escopo (RN10).],
+   acoes: (
+     ([Painel inicial, menu Pagamentos ou detalhe do contrato (UC10).], [Filtra por contrato, situação, vencimento ou "em atraso".], [Lista atualizada, com os atrasos destacados.], [Permanece na listagem de pagamentos.]),
+     ([Listagem de pagamentos.], [Escolhe um pagamento PREVISTO ou PAGO (somente FIN).], [Ação de baixa ou de repasse habilitada.], [UC12 ou UC13.]),
+     ([Listagem de pagamentos.], [Seleciona o contrato do pagamento.], [Detalhe do contrato.], [UC10.]),
+   )),
+  (id: "UC12", nome: [Registrar baixa de pagamento], ator: [FIN; ADM e FIN no estorno],
+   pre: [Pagamento PREVISTO de contrato ATIVO (RN06).],
+   acoes: (
+     ([Listagem de pagamentos (UC14).], [Aciona "Registrar baixa", informa data de recebimento e observação e confirma.], [Pagamento PAGO, com responsável e instante registrados (RN15).], [Listagem de pagamentos; o pagamento fica apto ao repasse (UC13).]),
+     ([Listagem de pagamentos (UC14).], [Aciona "Estornar baixa" em pagamento PAGO ainda não repassado, informa a justificativa e confirma (RF-PAG-04).], [Pagamento volta a PREVISTO.], [Listagem de pagamentos.]),
+   )),
+  (id: "UC13", nome: [Registrar repasse ao cooperado], ator: [FIN],
+   pre: [Pagamento PAGO (RN07).],
+   acoes: (
+     ([Listagem de pagamentos (UC14).], [Aciona "Registrar repasse", informa a data e confirma.], [Pagamento REPASSADO, com o valor líquido registrado, o responsável e o instante (RN07, RN15).], [Listagem de pagamentos.]),
+     ([Listagem de pagamentos (UC14).], [Aciona "Registrar repasse" em pagamento PREVISTO.], [Repasse recusado (409).], [Permanece na listagem; antes é preciso UC12.]),
+   )),
+  (id: "UC16", nome: [Consultar despesas], ator: [ADM, FIN, MOT],
+   pre: [Estar autenticado; o motorista vê apenas as próprias (RN10).],
+   acoes: (
+     ([Painel inicial ou menu Despesas.], [Filtra por origem, categoria, cooperado ou período; consulta os totais por categoria (RF-DSP-05).], [Lista e totais atualizados.], [Permanece na listagem de despesas.]),
+     ([Listagem de despesas.], [Aciona "Nova despesa" ou "Editar".], [Formulário de despesa aberto.], [UC15.]),
+     ([Listagem de despesas.], [Aciona "Excluir" e confirma.], [Despesa excluída.], [Listagem de despesas.]),
+   )),
+  (id: "UC15", nome: [Registrar despesa], ator: [FIN, ADM, MOT],
+   pre: [Estar autenticado. O motorista só lança despesas de origem COOPERADO e próprias (RN08, RN10).],
+   acoes: (
+     ([Listagem de despesas (UC16).], [Preenche o formulário, cujos campos se adaptam à origem (cooperativa ou cooperado), e salva.], [Despesa registrada, com o usuário responsável.], [Listagem de despesas (UC16).]),
+     ([Formulário de despesa.], [Informa cooperado em despesa de origem COOPERATIVA.], [Registro recusado (422).], [Permanece no formulário.]),
+   )),
+  (id: "UC17", nome: [Emitir relatórios financeiros], ator: [ADM, FIN, MOT],
+   pre: [Estar autenticado. Extrato: ADM, FIN e MOT (o motorista, apenas o próprio). Resumo financeiro e inadimplência: ADM e FIN.],
+   acoes: (
+     ([Painel inicial → menu Relatórios.], [Escolhe o relatório (extrato do cooperado, resumo financeiro ou inadimplência) e seleciona o período.], [Relatório exibido na tela.], [Permanece em UC17; a navegação pelo menu leva a outro módulo ou ao painel inicial.]),
+   )),
+))
 
 // ───────────────────────── 5. Regras de negócio ─────────────────────────
 = Regras de negócio <sec-rn>
@@ -892,7 +1040,7 @@ Este fluxo é replicado no documento de Design entre os oito diagramas de sequê
   caption: [Rastreabilidade RF → diagrama de sequência],
 )
 
-== Mapa de navegação da interface web
+== Mapa de navegação da interface web <sec-navegacao>
 #block(sticky: true)[O mapa mostra a estrutura de telas e o acesso por papel. Telas de listagem seguem o mesmo padrão (RF-WEB-03), e as de cadastro usam um formulário comum de criação e edição (RF-WEB-04).]
 #figure(
   dg(

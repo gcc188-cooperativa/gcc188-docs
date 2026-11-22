@@ -91,9 +91,9 @@
 )
 
 #resumo-relatorio(
-  palavras-chave: ("Design de software", "Arquitetura", "Contrato de API", "OpenAPI", "Spring Boot", "React", "Integração contínua", "Docker"),
+  palavras-chave: ("Design de software", "Arquitetura", "Contrato de API", "OpenAPI", "Spring Boot", "React", "Integração contínua", "Docker", "UML", "Regras de codificação"),
 )[
-  Este documento apresenta o projeto (design) do sistema de gestão de uma cooperativa de transportes, cujos requisitos foram formalizados na Especificação de Requisitos de Software. Ele registra as decisões de arquitetura tomadas em uma quinta rodada de elicitação com perguntas de múltipla escolha: quatro repositórios independentes (contrato da API, backend, infraestrutura e front-end), contrato escrito antes do código em OpenAPI e distribuído como pacotes versionados, backend em Java com Spring Boot, Hibernate e Flyway sobre PostgreSQL, front-end em React com TypeScript e Mantine, autenticação própria por _tokens_ em _cookies_ protegidos, implantação com Docker Compose e TLS, e integração contínua com GitHub Actions, versionamento semântico e publicação de imagens. O documento detalha a estrutura de cada parte, o modelo físico do banco, a estratégia de ramificação, as verificações automatizadas, os requisitos não funcionais revisados, o plano de implementação e os riscos, e lista as alterações propostas à especificação original.
+  Este documento apresenta o projeto (design) do sistema de gestão de uma cooperativa de transportes, cujos requisitos foram formalizados na Especificação de Requisitos de Software. Ele registra as decisões de arquitetura tomadas em uma quinta rodada de elicitação com perguntas de múltipla escolha: quatro repositórios independentes (contrato da API, backend, infraestrutura e front-end), contrato escrito antes do código em OpenAPI e distribuído como pacotes versionados, backend em Java com Spring Boot, Hibernate e Flyway sobre PostgreSQL, front-end em React com TypeScript e Mantine, autenticação própria por _tokens_ em _cookies_ protegidos, implantação com Docker Compose e TLS, e integração contínua com GitHub Actions, versionamento semântico e publicação de imagens. O documento detalha a estrutura de cada parte, o modelo físico do banco, a modelagem UML (diagramas de pacotes, de classes, de sequência dos CRUDs e de implantação), a estratégia de ramificação, as verificações automatizadas, os requisitos não funcionais revisados, as regras de codificação (notação, documentação, SOLID e _Clean Code_), o plano de implementação e os riscos, e lista as alterações propostas à especificação original.
 ]
 
 #lista-ilustracoes()
@@ -131,9 +131,11 @@
   "RNF": "Requisito Não Funcional",
   "RPO": "Recovery Point Objective",
   "RTO": "Recovery Time Objective",
+  "SOLID": "Single responsibility, Open-closed, Liskov substitution, Interface segregation, Dependency inversion",
   "SPA": "Single-Page Application",
   "SQL": "Structured Query Language",
   "TLS": "Transport Layer Security",
+  "UML": "Unified Modeling Language",
 ))
 
 #let sumario-abnt() = {
@@ -163,7 +165,7 @@
 = Introdução
 
 == Propósito e escopo
-Este documento é o artefato de saída da fase de *Projeto* do modelo em cascata adotado na Especificação de Requisitos de Software (doravante _especificação_). Ele traduz os requisitos aprovados em decisões de arquitetura e de engenharia: organização em quatro repositórios, contrato da API, estrutura do backend e do front-end, persistência e migrações, autenticação, infraestrutura, integração contínua, estratégia de testes e plano de implementação. A descrição segue a lógica da ISO/IEC/IEEE 42010 (ISO/IEC/IEEE, 2022): cada visão responde a preocupações de partes interessadas identificadas, e cada decisão relevante é registrada no formato de _Architecture Decision Record_ (NYGARD, 2011).
+Este documento é o artefato de saída da fase de *Projeto* do modelo em cascata adotado na Especificação de Requisitos de Software (doravante _especificação_). Ele traduz os requisitos aprovados em decisões de arquitetura e de engenharia: organização em quatro repositórios, contrato da API, estrutura do backend e do front-end, persistência e migrações, autenticação, infraestrutura, integração contínua, estratégia de testes, modelagem UML (diagramas de pacotes, de classes, de sequência e de implantação), regras de codificação e plano de implementação. A descrição segue a lógica da ISO/IEC/IEEE 42010 (ISO/IEC/IEEE, 2022): cada visão responde a preocupações de partes interessadas identificadas, e cada decisão relevante é registrada no formato de _Architecture Decision Record_ (NYGARD, 2011).
 
 As decisões resultam da quinta rodada de elicitação, conduzida com o mesmo método das quatro rodadas anteriores (perguntas fechadas de múltipla escolha, 42 perguntas) e consolidada em @sec-decisoes. O documento *não repete* os requisitos: ele os referencia por identificador (RF, RN, RNF, CA). Quando uma decisão altera ou refina o texto da especificação, a mudança é registrada em @sec-delta e deve ser incorporada à especificação pelo fluxo de gestão de mudanças dela.
 
@@ -283,6 +285,8 @@ O quadro resume as decisões; as justificativas detalhadas estão nos capítulos
   [`D40`], [—], [Arredondamento `HALF_UP` com escala 2 (RN03, RN05); "hoje" calculado no fuso `America/Sao_Paulo` com `Clock` injetado.], [`HALF_EVEN`.],
   [`D41`], [—], [Eventos de domínio síncronos entre módulos (aprovação e cancelamento) e portas para consultas (encerramento).], [Chamadas diretas entre serviços.],
   [`D42`], [—], [Caddy como proxy reverso.], [Traefik; Nginx com certbot.],
+  [`D43`], [—], [Diagramas UML (pacotes, classes, sequência e implantação) desenhados em Typst com _fletcher_, no próprio documento, em vez de Astah UML. Justificativa: o texto-fonte é versionado no Git e revisado por PR junto com o restante do documento, os diagramas usam os mesmos nomes de classes e de métodos do código, e a ferramenta é a já adotada na Sprint 1. Custo: sem editor gráfico nem exportação para `.asta`. Os oito diagramas de sequência cobrem as quatro operações do CRUD de `usuario` e as quatro do CRUD de `contrato` (@sec-seq).], [Astah UML; PlantUML ou Mermaid em arquivos separados.],
+  [`D44`], [—], [Regras de codificação RC01 a RC06 (notação, documentação, formatação, SOLID, _Clean Code_ e regras do domínio), verificadas por ferramenta e por revisão (@sec-codificacao).], [Convenções informais; guia de estilo externo sem verificação.],
 )
 
 // ───────────────────────── 3. Repositórios e processo ─────────────────────────
@@ -1116,7 +1120,9 @@ As premissas abaixo foram adotadas para permitir o design e devem ser confirmada
   [`PD12`], [Spring Boot 4.1 ou 4.2 (prevista para novembro de 2026).], [A estável vigente no M0.],
   [`PD13`], [Hospedagem e domínio da demonstração, se houver.], [Somente local.],
   [`PD14`], [_Collation_ ICU para ordenação em português.], [Padrão da imagem, a verificar.],
-  [`PD15`], [D38 a D42 (nomes JSON em `snake_case`, dinheiro como número, `HALF_UP`, eventos de domínio, Caddy), propostas do projetista.], [Adotadas.],
+  [`PD15`], [D38 a D44 (nomes JSON em `snake_case`, dinheiro como número, `HALF_UP`, eventos de domínio, Caddy), propostas do projetista.], [Adotadas.],
+  [`PD16`], [Aceitar Typst com _fletcher_ no lugar de Astah UML para os diagramas UML (D43).], [Typst com _fletcher_.],
+  [`PD17`], [Limites de RC05 (30 linhas, 4 parâmetros, complexidade 10) e uso do google-java-format.], [Os valores propostos; ajustar na primeira _sprint_ de implementação.],
 )
 
 *Gestão de mudanças.* Vale o fluxo da especificação: solicitação registrada, análise de impacto (agora incluindo contrato, backend, front e infraestrutura), aprovação e atualização por PR em ramo `docs/*`.
@@ -1133,15 +1139,23 @@ FORSGREN, Nicole; HUMBLE, Jez; KIM, Gene. *Accelerate*: the science of lean soft
 
 FOWLER, Martin. *Patterns of enterprise application architecture*. Boston: Addison-Wesley, 2002.
 
+GOOGLE. *Google Java Style Guide*. [S. l.]: Google, [s. d.]. Disponível em: https://google.github.io/styleguide/javaguide.html. Acesso em: 21 nov. 2026.
+
 GOOGLEAPIS. *Release Please*. [S. l.]: GitHub, [s. d.]. Disponível em: https://github.com/googleapis/release-please. Acesso em: 5 nov. 2026.
 
 ISO/IEC/IEEE. *ISO/IEC/IEEE 42010:2022*: software, systems and enterprise – architecture description. Geneva: ISO, 2022.
+
+MARTIN, Robert C. *Agile software development*: principles, patterns, and practices. Upper Saddle River: Prentice Hall, 2003.
+
+MARTIN, Robert C. *Clean code*: a handbook of agile software craftsmanship. Upper Saddle River: Prentice Hall, 2009.
 
 NIST. *Digital identity guidelines*: authentication and authenticator management (SP 800-63B-4). Gaithersburg: National Institute of Standards and Technology, 2025. Disponível em: https://pages.nist.gov/800-63-4/. Acesso em: 5 nov. 2026.
 
 NOTTINGHAM, Mark; WILDE, Erik; DALAL, Sanjay. *RFC 9457*: problem details for HTTP APIs. [S. l.]: Internet Engineering Task Force, 2023. Disponível em: https://www.rfc-editor.org/rfc/rfc9457. Acesso em: 5 nov. 2026.
 
 NYGARD, Michael. *Documenting architecture decisions*. [S. l.]: Cognitect, 2011. Disponível em: https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions. Acesso em: 5 nov. 2026.
+
+OBJECT MANAGEMENT GROUP. *Unified Modeling Language (UML)*: version 2.5.1. Needham: OMG, 2017. Disponível em: https://www.omg.org/spec/UML/2.5.1/. Acesso em: 21 nov. 2026.
 
 OPENAPI INITIATIVE. *OpenAPI Specification v3.1.1*. [S. l.]: Linux Foundation, 2024. Disponível em: https://spec.openapis.org/oas/v3.1.1.html. Acesso em: 5 nov. 2026.
 

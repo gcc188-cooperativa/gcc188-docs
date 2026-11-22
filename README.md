@@ -63,7 +63,7 @@ npm ci && npm run mock     # Prism em http://127.0.0.1:4010
 | `gcc188-infra` | `npm ci` | `yamllint`, `shellcheck`, `hadolint` (nos ganchos) | `scripts/up.sh dev` |
 | `gcc188-docs` | Typst para recompilar os PDFs | — | — |
 
-**Padrões de contribuição:** _Conventional Commits_ com o módulo como escopo e o requisito entre parênteses — ex.: `feat(contratos): aprovar contrato e gerar pagamentos (RF-CTR-04)`. _Commit_ e _push_ são verificados por ganchos lefthook (lint e commitlint) e pelo CI. Política de ramos e proteções: [Design, cap. 3](Design/Design.pdf).
+**Padrões de contribuição:** ver [Regras de uso do Git](#9-regras-de-uso-do-git-tarefa-21). Política de ramos e proteções: [Design, cap. 3](Design/Design.pdf).
 
 ## 4. Tecnologias
 
@@ -105,3 +105,11 @@ github.com/gcc188-cooperativa/
 ## 8. Requisitos não funcionais
 
 Os 21 RNF estão no capítulo 7 do documento de requisitos — mensuráveis e com forma de verificação (ex.: RNF-10 listagens p95 ≤ 500 ms com até 10 mil registros; RNF-11 cobertura ≥ 70% da camada de serviço; RNF-16 interface nas duas versões mais recentes de Chrome, Firefox, Edge e Safari).
+
+## 9. Regras de uso do Git (tarefa #21)
+
+- **Ramos:** _trunk-based_ protegido em `master`; trabalho em ramos curtos `docs/*`, `feat/*` e `fix/*`, integrados por PR revisado e _squash merge_. Tags de baseline (`V0.1`, `V0.2`) marcam versões da documentação.
+- **Commits:** _Conventional Commits_ `tipo(escopo): descrição` com escopo da pasta — `requisitos`, `prototipo`, `design`, `padroes`, `ci`, `deps`, `docs` (ver `commitlint.config.cjs`). Ex.: `docs(design): adicionar diagrama de pacotes (#19)` e, quando ligado a um requisito, `docs(requisitos): atualizar levantamento (RF-USR-01)`.
+- **Pastas:** documentação em `Requisitos/` e `Design/`; padrões em `Padrões Adotados/`; protótipo em `Requisitos/prototipo/`. Código-fonte e artefatos ficam nos repositórios de cada componente; `node_modules/` e saídas geradas não são versionados.
+- **`.gitignore`:** ignora `node_modules/`; a lista completa de arquivos ignorados deve ser revisada antes de cada novo tipo de artefato.
+- **Verificação:** `lefthook` valida `commit-msg` com _commitlint_; o CI valida título de PR e commits. O _push_ não tem gancho local neste repositório — a verificação de push/PR é feita pelo GitHub Actions.

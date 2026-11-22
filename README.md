@@ -109,7 +109,10 @@ Os 21 RNF estão no capítulo 7 do documento de requisitos — mensuráveis e co
 ## 9. Regras de uso do Git (tarefa #21)
 
 - **Ramos:** _trunk-based_ protegido em `master`; trabalho em ramos curtos `docs/*`, `feat/*` e `fix/*`, integrados por PR revisado e _squash merge_. Tags de baseline (`V0.1`, `V0.2`) marcam versões da documentação.
-- **Commits:** _Conventional Commits_ `tipo(escopo): descrição` com escopo da pasta — `requisitos`, `prototipo`, `design`, `padroes`, `ci`, `deps`, `docs` (ver `commitlint.config.cjs`). Ex.: `docs(design): adicionar diagrama de pacotes (#19)` e, quando ligado a um requisito, `docs(requisitos): atualizar levantamento (RF-USR-01)`.
+- **Commits:** _Conventional Commits_ `tipo(escopo): descrição` com escopo da pasta — `requisitos`, `prototipo`, `design`, `padroes`, `ci`, `deps`, `docs` (ver `commitlint.config.cjs`). Ex.: `docs(design): adicionar diagrama de pacotes (#19)` e, quando ligado a um requisito, `docs(requisitos): atualizar levantamento (RF-USR-01)`. Referência sugerida na tarefa: [iuricode/padrões-de-commits](https://github.com/iuricode/padroes-de-commits); adotamos Conventional Commits em vez disso por compatibilidade com commitlint, Release Please e geração automática de changelog.
 - **Pastas:** documentação em `Requisitos/` e `Design/`; padrões em `Padrões Adotados/`; protótipo em `Requisitos/prototipo/`. Código-fonte e artefatos ficam nos repositórios de cada componente; `node_modules/` e saídas geradas não são versionados.
-- **`.gitignore`:** ignora `node_modules/`; a lista completa de arquivos ignorados deve ser revisada antes de cada novo tipo de artefato.
-- **Verificação:** `lefthook` valida `commit-msg` com _commitlint_; o CI valida título de PR e commits. O _push_ não tem gancho local neste repositório — a verificação de push/PR é feita pelo GitHub Actions.
+- **`.gitignore`:** ignora artefatos locais e arquivos sensíveis, mantendo o repositório focado em documentação versionável.
+  - `node_modules/`: dependências do tooling Node (commitlint/lefthook).
+  - `.env`, `.env.*` (exceto `.env.example`): configuração local e segredos.
+  - `.idea/`, `.vscode/`, `*.iml`, `*.log`, `.DS_Store`, `Thumbs.db`: metadados de IDE, logs e arquivos de SO.
+- **Verificação:** `lefthook` valida `commit-msg` com _commitlint_; o CI valida título de PR e commits. Não há gancho local de `pre-push` neste repositório (a verificação de push/PR é feita pelo GitHub Actions); o histórico de hooks fica em `lefthook.yml`.

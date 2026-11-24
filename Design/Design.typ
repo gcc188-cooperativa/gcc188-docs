@@ -1384,6 +1384,21 @@ As premissas abaixo foram adotadas para permitir o design e devem ser confirmada
 
 *Gestão de mudanças.* Vale o fluxo da especificação: solicitação registrada, análise de impacto (agora incluindo contrato, backend, front e infraestrutura), aprovação e atualização por PR em ramo `docs/*`.
 
+// ───────────────────────── 16. Regras de codificação ─────────────────────────
+= Regras de codificação <sec-rc>
+
+#quadro([Regras de codificação adotadas.], (auto, 1fr, 1fr),
+  table.header[*ID*][*Regra*][*Verificação*],
+  [`RC01`], [Notação: TS/React usa PascalCase para componentes e tipos, camelCase para funções e variáveis e kebab-case para arquivos; Java usa PascalCase para classes e camelCase para métodos; SQL usa `snake_case`.], [Revisão de PR + ESLint.],
+  [`RC02`], [Documentação e comentários: toda função exportada em TS tem JSDoc com `@param` e `@returns`; todo método público Java tem Javadoc; comentários só explicam regra de negócio não óbvia.], [Revisão de PR.],
+  [`RC03`], [Formatação: um formatador por repositório, executado antes do _commit_; 2 espaços em TS, 4 em Java; fins de linha LF.], [Hook local + CI.],
+  [`RC04`], [SOLID: uma responsabilidade por classe ou módulo; dependências por abstração (portas em `service`); regras A1 a A6 verificadas por ArchUnit.], [ArquiteturaTest.],
+  [`RC05`], [Clean Code: funções curtas, nomes que descrevem a ação, sem `any` em TS, sem parâmetros booleanos, limites de complexidade, de parâmetros e de linhas.], [ESLint.],
+  [`RC06`], [Regras de domínio: RN01 a RN14 ficam em `service` ou no domínio, nunca no controlador; operações com 3 ou mais tabelas são atômicas; o estado do contrato só muda pela máquina de estados RN12.], [Testes de integração.],
+)
+
+A verificação A7 destas regras é registrada em PR; onde o ferramental ainda não existe, a regra figura como pendência, não como item concluído.
+
 // ───────────────────────── Referências ─────────────────────────
 #heading(numbering: none)[Referências]
 #set par(first-line-indent: 0pt, justify: false, leading: 0.65em)

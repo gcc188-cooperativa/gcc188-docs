@@ -285,6 +285,121 @@ O quadro resume as decisões; as justificativas detalhadas estão nos capítulos
   [`D42`], [—], [Caddy como proxy reverso.], [Traefik; Nginx com certbot.],
 )
 
+// ───────────────────────── Modelo de domínio e diagramas de projeto ─────────────────────────
+= Modelo de domínio e diagramas de projeto <sec-diagramas-projeto>
+
+Este capítulo reúne os diagramas de projeto: o diagrama de classes do domínio, o diagrama de pacotes e os diagramas de sequência dos CRUDs exigidos pela disciplina. Os atributos e as multiplicidades vêm do Dicionário de dados e do DER da especificação, complementados pelas colunas acrescentadas em @sec-fisico.
+
+== Diagrama de classes do domínio
+#let cls(pos, nome, atributos, largura: 3.6cm) = node(
+  pos,
+  [
+    #text(size: 8pt, weight: "bold")[#nome]
+    #linebreak()
+    #block(stroke: 0.4pt + luma(170), inset: 3pt, width: 100%)[
+      #show raw: set text(size: 6.2pt)
+      #text(size: 6.2pt)[
+        #for a in atributos { raw(a); linebreak() }
+      ]
+    ]
+  ],
+  shape: fletcher.shapes.rect, stroke: 0.7pt, width: largura, name: label(nome),
+)
+#let rel-cls(a, b, ca, cb, lbl, ..opts) = (
+  edge(a, b, "-", stroke: 0.8pt, label: text(size: 7pt, style: "italic", lbl), label-fill: true, ..opts),
+  edge(a, b, "-", stroke: none, label: text(size: 7.5pt, weight: "bold", ca), label-pos: 0.1, label-side: left, label-sep: 3pt, ..opts),
+  edge(a, b, "-", stroke: none, label: text(size: 7.5pt, weight: "bold", cb), label-pos: 0.9, label-side: left, label-sep: 3pt, ..opts),
+)
+
+#figure(
+  dg(
+    spacing: (1.5cm, 0.9cm),
+    cls((1,0), "usuario", (
+      "id", "nome", "email", "senha_hash", "papel", "ativo", "deve_trocar_senha",
+      "falhas_login", "bloqueado_ate", "versao", "criado_em", "atualizado_em",
+    )),
+    cls((0,0), "cliente", (
+      "id", "usuario_id", "nome", "documento", "telefone", "email_contato",
+      "ativo", "criado_em", "atualizado_em",
+    )),
+    cls((2,0), "cooperando", (
+      "id", "usuario_id", "matricula", "nome", "cpf", "telefone", "data_ingresso",
+      "ativo", "criado_em", "atualizado_em",
+    )),
+    cls((1,1), "contrato", (
+      "id", "cooperando_id", "cliente_id", "descricao", "valor_total", "modalidade",
+      "num_parcelas", "dia_vencimento", "data_inicio", "data_fim", "taxa_tipo", "taxa_valor",
+      "status", "motivo_reprovacao", "criado_por_id", "aprovado_por_id", "aprovado_em",
+      "versao", "criado_em", "atualizado_em",
+    )),
+    cls((1,2), "pagamento", (
+      "id", "contrato_id", "numero_parcela", "data_vencimento", "valor_bruto",
+      "valor_taxa", "valor_liquido", "status", "data_baixa", "baixado_por_id", "data_repasse",
+      "repassado_por_id", "observacao", "versao", "criado_em", "atualizado_em",
+    )),
+    cls((2,1), "despesa", (
+      "id", "origem", "cooperando_id", "contrato_id", "categoria", "descricao",
+      "valor", "data_despesa", "criado_em", "atualizado_em",
+    )),
+    // herança por papel (usuario.papel)
+    edge(<cliente>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
+    edge(<cooperando>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
+    // associações (multiplicidades do DER)
+    ..rel-cls(<usuario>, <cliente>, "1", "1", "acessa", bend: 35deg),
+    ..rel-cls(<usuario>, <cooperando>, "1", "1", "acessa", bend: -35deg),
+    ..rel-cls(<cliente>, <contrato>, "1", "1..*", "contrata"),
+    ..rel-cls(<cooperando>, <contrato>, "1", "1..*", "executa"),
+    ..rel-cls(<contrato>, <pagamento>, "1", "1..*", "gera"),
+    ..rel-cls(<cooperando>, <despesa>, "0..1", "0..*", "origina"),
+    ..rel-cls(<contrato>, <despesa>, "0..1", "0..*", "associa"),
+  ),
+  caption: [Diagrama de classes do domínio: atributos, associações, multiplicidades e herança por papel. PK/FK/UK conforme o Dicionário de dados.],
+)
+
+Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN em cliente e cooperando), conforme o Dicionário de dados. A especialização é determinada pelo valor de `usuario.papel` (`ADMINISTRADOR`, `FINANCEIRO`, `MOTORISTA` ou `CLIENTE`): somente `MOTORISTA` e `CLIENTE` possuem classe de especialização (RN14).
+
+== Diagrama de pacotes
+#figure(
+  dg(
+    spacing: (1.9cm, 0.45cm),
+    // front
+    node((0,0), [*front*], name: <pk-fe>, width: 2.2cm, fill: soft),
+    node((0,1), [`app/`], name: <fe-app>, width: 2.2cm),
+    node((0,2), [`features/`], name: <fe-fea>, width: 2.2cm),
+    node((0,3), [`shared/`], name: <fe-shr>, width: 2.2cm),
+    node((0,4), [`mocks/`], name: <fe-mck>, width: 2.2cm),
+    node(enclose: (<pk-fe>, <fe-app>, <fe-fea>, <fe-shr>, <fe-mck>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // contrato
+    node((1,0), [*api-contract*], name: <pk-ct>, width: 2.2cm, fill: soft),
+    node((1,1), [`openapi/`], name: <ct-oas>, width: 2.2cm),
+    node((1,2), [`ts/`], name: <ct-ts>, width: 2.2cm),
+    node((1,3), [`java/`], name: <ct-jv>, width: 2.2cm),
+    node(enclose: (<pk-ct>, <ct-oas>, <ct-ts>, <ct-jv>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // backend
+    node((2,0), [*backend*], name: <pk-be>, width: 2.2cm, fill: soft),
+    node((2,1), [`web/`], name: <be-web>, width: 2.2cm),
+    node((2,2), [`service/`], name: <be-svc>, width: 2.2cm),
+    node((2,3), [`persistence/`], name: <be-per>, width: 2.2cm),
+    node((2,4), [`shared/`], name: <be-shr>, width: 2.2cm),
+    node(enclose: (<pk-be>, <be-web>, <be-svc>, <be-per>, <be-shr>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // infra
+    node((3,0), [*infra*], name: <pk-in>, width: 2.2cm, fill: soft),
+    node((3,1), [`compose.yaml`], name: <in-cmp>, width: 2.2cm),
+    node((3,2), [`caddy/`], name: <in-cad>, width: 2.2cm),
+    node((3,3), [`backup/`], name: <in-bkp>, width: 2.2cm),
+    node((3,4), [`observability/`], name: <in-obs>, width: 2.2cm),
+    node(enclose: (<pk-in>, <in-cmp>, <in-cad>, <in-bkp>, <in-obs>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // dependências entre pacotes
+    edge(<pk-fe>, <pk-ct>, "--|>", label: text(size: 6.8pt)[consome\ contrato], label-side: left, label-sep: 3pt),
+    edge(<pk-be>, <pk-ct>, "--|>", label: text(size: 6.8pt)[implementa], label-side: right, label-sep: 3pt),
+    edge(<pk-be>, <pk-in>, "--|>", label: text(size: 6.8pt)[artefato\ implantado], label-side: left, label-sep: 3pt),
+    // dependências internas do backend
+    edge(<be-web>, <be-svc>, "-|>"),
+    edge(<be-svc>, <be-per>, "-|>"),
+  ),
+  caption: [Diagrama de pacotes: pastas do front, do backend, do contrato e da infraestrutura, com as dependências entre elas (regras A1 a A6).],
+)
+
 // ───────────────────────── 3. Repositórios e processo ─────────────────────────
 = Repositórios, ramificação e versionamento
 
@@ -750,8 +865,6 @@ A autenticação é própria, com Spring Security (D21), e reaproveita bibliotec
 
 O prefixo `__Host-` não é usado porque exige `Path=/`, o que impediria restringir o caminho dos _cookies_ de _token_. Como o front e a API compartilham a origem (D28), não há CORS e `SameSite=Strict` funciona sem exceções.
 
-#let seq-msg(x1, x2, y, body, dashed: false) = edge((x1, y), (x2, y), if dashed { "--|>" } else { "-|>" }, label: text(size: 6.8pt, body), label-side: left, label-sep: 2pt)
-#let life = (stroke: 0.5pt + luma(150))
 #figure(
   dg(
     spacing: (2.6cm, 0.85cm),

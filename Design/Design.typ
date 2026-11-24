@@ -49,6 +49,8 @@
   set par(justify: false, first-line-indent: 0pt, leading: 0.55em)
   text(size: 8pt, hyphenate: false, diagram(..nstyle, ..args))
 }
+#let seq-msg(x1, x2, y, body, dashed: false) = edge((x1, y), (x2, y), if dashed { "--|>" } else { "-|>" }, label: text(size: 6.8pt, body), label-side: left, label-sep: 2pt)
+#let life = (stroke: 0.5pt + luma(150))
 #let head-fill = (_, y) => if y == 0 { soft }
 
 // Quadro padrão: legenda, colunas e células (a primeira linha é o cabeçalho).
@@ -398,6 +400,135 @@ Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN e
     edge(<be-svc>, <be-per>, "-|>"),
   ),
   caption: [Diagrama de pacotes: pastas do front, do backend, do contrato e da infraestrutura, com as dependências entre elas (regras A1 a A6).],
+)
+
+== Diagramas de sequência dos CRUDs
+Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperando`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `POST /usuarios` (ADM)]),
+    seq-msg(1, 2, 2, [2\. valida `uq_usuario_email` e papel]),
+    seq-msg(2, 3, 3, [3\. `INSERT usuario`]),
+    seq-msg(1, 0, 4, [4\. 201 Created], dashed: true),
+  ),
+  caption: [Sequência 1/8 — Cadastrar usuário (RF-USR-01; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,9), "--", ..life), edge((1,0), (1,9), "--", ..life),
+    edge((2,0), (2,9), "--", ..life), edge((3,0), (3,9), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `GET /usuarios` (ADM)]),
+    seq-msg(1, 2, 2, [2\. filtros papel e ativo; paginação]),
+    seq-msg(2, 3, 3, [3\. `SELECT usuario` (paginado)]),
+    seq-msg(1, 0, 4, [4\. 200 OK (lista)], dashed: true),
+    seq-msg(0, 1, 5, [5\. `GET /usuarios/{id}` (ADM)]),
+    seq-msg(1, 2, 6, [6\. consulta por identificador]),
+    seq-msg(2, 3, 7, [7\. `SELECT usuario` por `id`]),
+    seq-msg(1, 0, 8, [8\. 200 OK (usuário)], dashed: true),
+  ),
+  caption: [Sequência 2/8 — Consultar usuários (RF-USR-02; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `PUT /usuarios/{id}` (ADM)]),
+    seq-msg(1, 2, 2, [2\. valida dados e papel (RN14)]),
+    seq-msg(2, 3, 3, [3\. `UPDATE usuario` com `versao`]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 3/8 — Alterar usuário (RF-USR-03; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `PATCH /usuarios/{id}/situacao` (ADM)]),
+    seq-msg(1, 2, 2, [2\. inativa o usuário (RN11)]),
+    seq-msg(2, 3, 3, [3\. `UPDATE usuario` (`ativo` = falso)]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 4/8 — Excluir usuário, inativação lógica (RF-USR-04; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Motorista/Administrador*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,6), "--", ..life), edge((1,0), (1,6), "--", ..life),
+    edge((2,0), (2,6), "--", ..life), edge((3,0), (3,6), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `POST /contratos` (MOT, ADM)]),
+    seq-msg(1, 2, 2, [2\. valida RN01–RN03 e RN13]),
+    seq-msg(2, 3, 3, [3\. `SELECT cooperando`,\ `cliente` e `usuario` (criador)]),
+    seq-msg(2, 3, 4, [4\. `INSERT contrato` (RASCUNHO)]),
+    seq-msg(1, 0, 5, [5\. 201 Created], dashed: true),
+  ),
+  caption: [Sequência 5/8 — Criar contrato (RF-CTR-01; várias tabelas).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Navegador (SPA)*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `GET /contratos/{id}`]),
+    seq-msg(1, 2, 2, [2\. aplica o escopo do papel (RN10)]),
+    seq-msg(2, 3, 3, [3\. `SELECT contrato` com JOIN em\ `cooperando`, `cliente` e `pagamento`]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 6/8 — Consultar contrato (RF-CTR-09; várias tabelas).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Motorista/Administrador*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `PUT /contratos/{id}` (MOT, ADM)]),
+    seq-msg(1, 2, 2, [2\. só em RASCUNHO (RN12)]),
+    seq-msg(2, 3, 3, [3\. `UPDATE contrato`, grava\ `versao` e `atualizado_em`]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 7/8 — Alterar contrato (RF-CTR-02; várias tabelas).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Motorista/Administrador*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,6), "--", ..life), edge((1,0), (1,6), "--", ..life),
+    edge((2,0), (2,6), "--", ..life), edge((3,0), (3,6), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `DELETE /contratos/{id}` (MOT, ADM)]),
+    seq-msg(1, 2, 2, [2\. só em RASCUNHO (RN11, RN12)]),
+    seq-msg(2, 3, 3, [3\. `SELECT pagamento` (ausência)]),
+    seq-msg(2, 3, 4, [4\. `DELETE contrato`]),
+    seq-msg(1, 0, 5, [5\. 204 No Content], dashed: true),
+  ),
+  caption: [Sequência 8/8 — Excluir contrato (RF-CTR-10; várias tabelas).],
 )
 
 // ───────────────────────── 3. Repositórios e processo ─────────────────────────

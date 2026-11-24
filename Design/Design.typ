@@ -1182,6 +1182,25 @@ O estilo `'unsafe-inline'` é necessário apenas para estilos, porque o React ap
   [Versões do protocolo], [TLS 1.2 ou superior.], [TLS 1.2 ou superior (padrão do Caddy).],
 )
 
+#figure(
+  dg(
+    spacing: (1.6cm, 1.0cm),
+    node((0,0), [*Navegador*], name: <cli>, width: 2.2cm),
+    node((1,0), [*Caddy*\ TLS 443], name: <prox>, width: 2.6cm),
+    node((2,0), [*Nginx*\ (arquivos estáticos)], name: <web>, width: 2.8cm),
+    node((2,1), [*Spring Boot*\ `/api/v1`], name: <api>, width: 2.8cm),
+    node((3,1), [*PostgreSQL*], name: <pg>, shape: fletcher.shapes.cylinder, width: 2.2cm),
+    node((3,2), [*backup*\ `pg_dump`], name: <bk>, width: 2.6cm),
+    node(enclose: (<prox>, <web>, <api>, <pg>, <bk>), stroke: 0.7pt + luma(90), inset: 10pt, snap: false, fill: luma(250)),
+    edge(<cli>, <prox>, "<|-|>", label: [HTTPS], label-side: left),
+    edge(<prox>, <web>, "-|>", label: [`/`], label-side: left),
+    edge(<prox>, <api>, "-|>", label: [`/api/*`], label-side: right),
+    edge(<api>, <pg>, "<|-|>", label: [JDBC], label-side: left),
+    edge(<bk>, <pg>, "-|>", label: [dump], label-side: right),
+  ),
+  caption: [Diagrama de implantação: nós de execução, artefatos alocados e protocolos no host Docker (D28, D29).],
+)
+
 == Segredos e configuração <sec-segredos>
 - *Desenvolvimento:* `scripts/init-env.sh` gera `.env` e os arquivos de _secrets_ com valores aleatórios (`openssl rand`); ambos estão no `.gitignore`.
 - *Produção:* arquivos de _secrets_ com permissão 0400, montados pelo mecanismo `secrets` do Compose em `/run/secrets/` (D31). O backend os lê por `configtree`.

@@ -406,7 +406,7 @@ Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN e
   caption: [Diagrama de pacotes: pastas do front, do backend, do contrato e da infraestrutura, com as dependências entre elas (regras A1 a A6).],
 )
 
-== Diagramas de sequência dos CRUDs
+== Diagramas de sequência dos CRUDs <sec-seq>
 Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperado`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
 
 #figure(
@@ -1391,7 +1391,7 @@ As premissas abaixo foram adotadas para permitir o design e devem ser confirmada
 *Gestão de mudanças.* Vale o fluxo da especificação: solicitação registrada, análise de impacto (agora incluindo contrato, backend, front e infraestrutura), aprovação e atualização por PR em ramo `docs/*`.
 
 // ───────────────────────── 16. Regras de codificação ─────────────────────────
-= Regras de codificação <sec-rc>
+= Regras de codificação <sec-rc> <sec-codificacao>
 
 #quadro([Regras de codificação adotadas.], (auto, 1fr, 1fr),
   table.header[*ID*][*Regra*][*Verificação*],

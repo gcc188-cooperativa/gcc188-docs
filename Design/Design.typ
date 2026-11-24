@@ -324,12 +324,12 @@ Este capítulo reúne os diagramas de projeto: o diagrama de classes do domínio
       "id", "usuario_id", "nome", "documento", "telefone", "email_contato",
       "ativo", "criado_em", "atualizado_em",
     )),
-    cls((2,0), "cooperando", (
+    cls((2,0), "cooperado", (
       "id", "usuario_id", "matricula", "nome", "cpf", "telefone", "data_ingresso",
       "ativo", "criado_em", "atualizado_em",
     )),
     cls((1,1), "contrato", (
-      "id", "cooperando_id", "cliente_id", "descricao", "valor_total", "modalidade",
+      "id", "cooperado_id", "cliente_id", "descricao", "valor_total", "modalidade",
       "num_parcelas", "dia_vencimento", "data_inicio", "data_fim", "taxa_tipo", "taxa_valor",
       "status", "motivo_reprovacao", "criado_por_id", "aprovado_por_id", "aprovado_em",
       "versao", "criado_em", "atualizado_em",
@@ -340,25 +340,25 @@ Este capítulo reúne os diagramas de projeto: o diagrama de classes do domínio
       "repassado_por_id", "observacao", "versao", "criado_em", "atualizado_em",
     )),
     cls((2,1), "despesa", (
-      "id", "origem", "cooperando_id", "contrato_id", "categoria", "descricao",
+      "id", "origem", "cooperado_id", "contrato_id", "categoria", "descricao",
       "valor", "data_despesa", "criado_em", "atualizado_em",
     )),
     // herança por papel (usuario.papel)
     edge(<cliente>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
-    edge(<cooperando>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
+    edge(<cooperado>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
     // associações (multiplicidades do DER)
     ..rel-cls(<usuario>, <cliente>, "1", "1", "acessa", bend: 35deg),
-    ..rel-cls(<usuario>, <cooperando>, "1", "1", "acessa", bend: -35deg),
+    ..rel-cls(<usuario>, <cooperado>, "1", "1", "acessa", bend: -35deg),
     ..rel-cls(<cliente>, <contrato>, "1", "1..*", "contrata"),
-    ..rel-cls(<cooperando>, <contrato>, "1", "1..*", "executa"),
+    ..rel-cls(<cooperado>, <contrato>, "1", "1..*", "executa"),
     ..rel-cls(<contrato>, <pagamento>, "1", "1..*", "gera"),
-    ..rel-cls(<cooperando>, <despesa>, "0..1", "0..*", "origina"),
+    ..rel-cls(<cooperado>, <despesa>, "0..1", "0..*", "origina"),
     ..rel-cls(<contrato>, <despesa>, "0..1", "0..*", "associa"),
   ),
   caption: [Diagrama de classes do domínio: atributos, associações, multiplicidades e herança por papel. PK/FK/UK conforme o Dicionário de dados.],
 )
 
-Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN em cliente e cooperando), conforme o Dicionário de dados. A especialização é determinada pelo valor de `usuario.papel` (`ADMINISTRADOR`, `FINANCEIRO`, `MOTORISTA` ou `CLIENTE`): somente `MOTORISTA` e `CLIENTE` possuem classe de especialização (RN14).
+Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN em cliente e cooperado), conforme o Dicionário de dados. A especialização é determinada pelo valor de `usuario.papel` (`ADMINISTRADOR`, `FINANCEIRO`, `MOTORISTA` ou `CLIENTE`): somente `MOTORISTA` e `CLIENTE` possuem classe de especialização (RN14).
 
 == Diagrama de pacotes
 #figure(
@@ -403,7 +403,7 @@ Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN e
 )
 
 == Diagramas de sequência dos CRUDs
-Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperando`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
+Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperado`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
 
 #figure(
   dg(
@@ -478,7 +478,7 @@ Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a R
     edge((2,0), (2,6), "--", ..life), edge((3,0), (3,6), "--", ..life),
     seq-msg(0, 1, 1, [1\. `POST /contratos` (MOT, ADM)]),
     seq-msg(1, 2, 2, [2\. valida RN01–RN03 e RN13]),
-    seq-msg(2, 3, 3, [3\. `SELECT cooperando`,\ `cliente` e `usuario` (criador)]),
+    seq-msg(2, 3, 3, [3\. `SELECT cooperado`,\ `cliente` e `usuario` (criador)]),
     seq-msg(2, 3, 4, [4\. `INSERT contrato` (RASCUNHO)]),
     seq-msg(1, 0, 5, [5\. 201 Created], dashed: true),
   ),
@@ -494,7 +494,7 @@ Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a R
     edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
     seq-msg(0, 1, 1, [1\. `GET /contratos/{id}`]),
     seq-msg(1, 2, 2, [2\. aplica o escopo do papel (RN10)]),
-    seq-msg(2, 3, 3, [3\. `SELECT contrato` com JOIN em\ `cooperando`, `cliente` e `pagamento`]),
+    seq-msg(2, 3, 3, [3\. `SELECT contrato` com JOIN em\ `cooperado`, `cliente` e `pagamento`]),
     seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
   ),
   caption: [Sequência 6/8 — Consultar contrato (RF-CTR-09; várias tabelas).],
@@ -668,7 +668,7 @@ O contrato mantém as convenções da seção 10.1 da especificação (base `/ap
 #quadro([Convenções adicionais do contrato.], (auto, 1fr),
   table.header[*Tema*][*Convenção*],
   [Versão do formato], [OpenAPI 3.1. Um arquivo por recurso em `paths/`; esquemas reutilizáveis em `components/`.],
-  [Nomes (D38)], [Campos JSON em `snake_case`, iguais às colunas (`taxa_valor`, `cooperando_id`). `operationId` em `camelCase` com verbo e recurso (`aprovarContrato`). Uma _tag_ por módulo.],
+  [Nomes (D38)], [Campos JSON em `snake_case`, iguais às colunas (`taxa_valor`, `cooperado_id`). `operationId` em `camelCase` com verbo e recurso (`aprovarContrato`). Uma _tag_ por módulo.],
   [Valores monetários (D39)], [Número decimal com duas casas (`multipleOf: 0.01`). O front não soma nem multiplica valores; exibe os valores calculados pela API.],
   [Datas], [`date` (AAAA-MM-DD) para vencimentos e vigência; `date-time` em UTC para instantes (RNF-14).],
   [Enumerações], [Textos em maiúsculas, iguais aos valores do banco (`PENDENTE_APROVACAO`).],
@@ -740,7 +740,7 @@ br.ufla.cooperativa
 ├── shared/            # erros (ProblemDetail), paginação, Clock, auditoria, escopo do usuário
 ├── auth/              # login, refresh, logout, JWT, CSRF, política de senha
 ├── usuarios/
-├── cooperandos/
+├── cooperados/
 ├── clientes/
 ├── contratos/         # máquina de estados, cálculo de taxa
 ├── pagamentos/        # cronograma, baixa, repasse, estorno
@@ -778,10 +778,10 @@ br.ufla.cooperativa
   [RN05], [`CronogramaPagamentos` em `pagamentos.service`; resíduo de arredondamento na última parcela.], [Teste unitário e propriedade "soma das parcelas é igual ao total" (CA-01).],
   [RN06, RN07], [`PagamentoService` e `ContratoService`; transições por tabela de estados.], [Teste de integração (CA-03, CA-07).],
   [RN08], [`DespesaService`; `CHECK` condicional no banco.], [Teste de integração (CA-06).],
-  [RN10], [`EscopoDoUsuario` em `shared`: gera a `Specification` que restringe por cooperando ou cliente.], [Teste de integração (CA-04) e teste parametrizado da matriz de permissões.],
+  [RN10], [`EscopoDoUsuario` em `shared`: gera a `Specification` que restringe por cooperado ou cliente.], [Teste de integração (CA-04) e teste parametrizado da matriz de permissões.],
   [RN11], [Serviços de cadastro: inativação em vez de exclusão; sem método de exclusão em pagamento.], [Teste de integração.],
   [RN12], [`ContratoEstados`: mapa de transições permitidas por estado e papel; quem elabora não aprova.], [Teste unitário exaustivo das transições (CA-05).],
-  [RN14], [`CooperandoService` e `ClienteService`: criação do usuário e do vínculo em uma transação.], [Teste de integração (falha parcial desfaz tudo).],
+  [RN14], [`CooperadoService` e `ClienteService`: criação do usuário e do vínculo em uma transação.], [Teste de integração (falha parcial desfaz tudo).],
   [RN15], [Serviços de aprovação, baixa e repasse gravam o ator e o instante.], [Teste de integração.],
 )
 
@@ -793,7 +793,7 @@ br.ufla.cooperativa
 - *Comando concorrente* (baixa, repasse, aprovação): a segunda execução encontra o estado já alterado e responde 409 pela validação da transição (RN12, RN04); se as duas leem o mesmo estado ao mesmo tempo, a falha de versão do Hibernate é traduzida também em 409.
 
 == Persistência
-- *Filtros e escopo* (D11): cada recurso tem uma `Specification` de filtro (parâmetros da consulta) combinada por `and` com a de escopo (RN10). Como a restrição de escopo faz parte da consulta, um registro de outro cooperando simplesmente não é encontrado e a resposta é 404 (RNF-03).
+- *Filtros e escopo* (D11): cada recurso tem uma `Specification` de filtro (parâmetros da consulta) combinada por `and` com a de escopo (RN10). Como a restrição de escopo faz parte da consulta, um registro de outro cooperado simplesmente não é encontrado e a resposta é 404 (RNF-03).
 - *Ordenação:* `sort` aceita apenas campos de uma lista permitida por recurso; qualquer outro valor responde 400. O tamanho máximo de página é 100 (RNF-08).
 - *Relatórios:* consultas JPQL ou SQL nativo com projeções para DTOs, em transação somente leitura, no módulo `relatorios`.
 - *Desempenho:* associações `LAZY`; carga de detalhe com `EntityGraph`; `default_batch_fetch_size` para evitar o problema N+1.
@@ -867,7 +867,7 @@ As migrações ficam em `src/main/resources/db/migration` e são aplicadas na in
 
 #codigo([Sequência inicial de migrações (nomes ilustrativos).], ```text
 V202611101000__criar_usuario.sql
-V202611101010__criar_cooperando_e_cliente.sql
+V202611101010__criar_cooperado_e_cliente.sql
 V202611101020__criar_contrato.sql
 V202611101030__criar_pagamento.sql
 V202611101040__criar_despesa.sql
@@ -881,7 +881,7 @@ O modelo da especificação é mantido, com os acréscimos de Δ05 e Δ06. As co
 #codigo([DDL de `contrato` e `pagamento` com as restrições da especificação.], ```sql
 CREATE TABLE contrato (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  cooperando_id     BIGINT        NOT NULL REFERENCES cooperando (id),
+  cooperado_id      BIGINT        NOT NULL REFERENCES cooperado (id),
   cliente_id        BIGINT        NOT NULL REFERENCES cliente (id),
   descricao         VARCHAR(500)  NOT NULL,
   valor_total       NUMERIC(12,2) NOT NULL CHECK (valor_total > 0),
@@ -952,10 +952,10 @@ CREATE TABLE refresh_token (
 #quadro([Índices (o PostgreSQL não cria índices automaticamente em chaves estrangeiras).], (auto, 1fr),
   table.header[*Índice*][*Finalidade*],
   [`uq_usuario_email` em `lower(email)`], [E-mail único sem distinguir maiúsculas (RN14).],
-  [`ix_contrato_cooperando (cooperando_id, status)`], [Escopo do motorista e filtros de listagem.],
+  [`ix_contrato_cooperado (cooperado_id, status)`], [Escopo do motorista e filtros de listagem.],
   [`ix_contrato_cliente (cliente_id, status)`], [Escopo do cliente e filtros de listagem.],
   [`ix_pagamento_status_venc (status, data_vencimento)`], [Atraso, painel e relatórios de inadimplência (RF-PAG-05, RF-REL-03).],
-  [`ix_despesa_coop_data (cooperando_id, data_despesa)`], [Extrato do cooperando e escopo do motorista.],
+  [`ix_despesa_coop_data (cooperado_id, data_despesa)`], [Extrato do cooperado e escopo do motorista.],
   [`ix_despesa_origem_cat_data (origem, categoria, data_despesa)`], [Totais por categoria e período (RF-DSP-05).],
   [`ix_refresh_usuario (usuario_id)`], [Revogação de todos os _tokens_ de um usuário.],
 )
@@ -989,7 +989,7 @@ A autenticação é própria, com Spring Security (D21), e reaproveita bibliotec
 
 #quadro([Credenciais e _cookies_.], (auto, 1fr, 1fr),
   table.header[*Item*][*Característica*][*Atributos do _cookie_*],
-  [`ACCESS_TOKEN`], [JWT assinado com HMAC-SHA256, validade de 15 minutos. _Claims_: `sub` (id do usuário), `papel`, `vinculo` (id do cooperando ou do cliente), `iat`, `exp` e `jti`.], [`HttpOnly; Secure; SameSite=Strict; Path=/api`],
+  [`ACCESS_TOKEN`], [JWT assinado com HMAC-SHA256, validade de 15 minutos. _Claims_: `sub` (id do usuário), `papel`, `vinculo` (id do cooperado ou do cliente), `iat`, `exp` e `jti`.], [`HttpOnly; Secure; SameSite=Strict; Path=/api`],
   [`REFRESH_TOKEN`], [Valor aleatório de 256 bits; no banco fica apenas o SHA-256. Validade de 7 dias, rotativo.], [`HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`],
   [`XSRF-TOKEN`], [Valor aleatório para proteção CSRF; o front o lê e o devolve no cabeçalho `X-XSRF-TOKEN`.], [`Secure; SameSite=Strict; Path=/` (legível pelo JavaScript)],
 )
@@ -1074,7 +1074,7 @@ O PHP foi considerado, mas descartado: o backend em Java já concentra regras e 
 src/
 ├── app/              # provedores, roteador, layout (AppShell), tema do Mantine
 ├── features/         # um diretório por módulo
-│   ├── auth/  usuarios/  cooperandos/  clientes/
+│   ├── auth/  usuarios/  cooperados/  clientes/
 │   ├── contratos/  pagamentos/  despesas/  relatorios/  painel/
 │   └── (em cada um) pages/  components/  forms/  hooks/
 ├── shared/
@@ -1336,7 +1336,7 @@ O plano organiza a fase de Implementação do modelo em cascata em marcos vertic
   [M0 Fundação], [Todos], [Repositórios criados; proteções de ramo; _workflows_ de CI e de release; lefthook; Release Please; fixação das versões (Java, Spring Boot, PostgreSQL, Node); esqueleto que sobe no Compose com TLS.], [CI verde nos quatro repositórios; `compose up` com _health checks_ saudáveis.],
   [M1 Contrato 0.1], [`api-contract`], [Autenticação e usuários no OpenAPI; esquema de erros e paginação; publicação dos pacotes; Prism.], [Pacotes Maven e npm publicados; `oasdiff` e Spectral ativos.],
   [M2 Acesso], [`backend`, `front`], [Migrações base; `auth` completo; usuários; administrador inicial; _layout_, _login_, sessão e tela de usuários; decisão da biblioteca de tabelas.], [CA-10, CA-11, CA-12 e CA-15; login e CRUD de usuários ponta a ponta.],
-  [M3 Cadastros], [Todos], [Cooperandos e clientes (RF-COO, RF-CLI), com `ListPage` e `FormPage` reutilizáveis.], [CRUDs funcionando; RN14 testada.],
+  [M3 Cadastros], [Todos], [Cooperados e clientes (RF-COO, RF-CLI), com `ListPage` e `FormPage` reutilizáveis.], [CRUDs funcionando; RN14 testada.],
   [M4 Contratos e pagamentos], [Todos], [Contratos, máquina de estados, cronograma, baixa, repasse e estorno (RF-CTR, RF-PAG); detalhe do contrato com ações por papel.], [CA-01 a CA-09; matriz de permissões testada. Marco de maior risco.],
   [M5 Despesas e relatórios], [Todos], [Despesas, extrato, resumo, inadimplência e painel (RF-DSP, RF-REL, RF-WEB-08 e 09).], [Requisitos essenciais e importantes implementados.],
   [M6 Endurecimento e entrega], [Todos], [Teste ponta a ponta completo; k6; Lighthouse CI; backup e restauração (CA-13); documentação; _release_ 1.0.0 nos quatro repositórios.], [Critérios de aceitação cumpridos; RNF revisados verificados.],

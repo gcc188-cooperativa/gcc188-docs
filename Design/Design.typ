@@ -324,12 +324,12 @@ Este capítulo reúne os diagramas de projeto: o diagrama de classes do domínio
       "id", "usuario_id", "nome", "documento", "telefone", "email_contato",
       "ativo", "criado_em", "atualizado_em",
     )),
-    cls((2,0), "cooperando", (
+    cls((2,0), "cooperado", (
       "id", "usuario_id", "matricula", "nome", "cpf", "telefone", "data_ingresso",
       "ativo", "criado_em", "atualizado_em",
     )),
     cls((1,1), "contrato", (
-      "id", "cooperando_id", "cliente_id", "descricao", "valor_total", "modalidade",
+      "id", "cooperado_id", "cliente_id", "descricao", "valor_total", "modalidade",
       "num_parcelas", "dia_vencimento", "data_inicio", "data_fim", "taxa_tipo", "taxa_valor",
       "status", "motivo_reprovacao", "criado_por_id", "aprovado_por_id", "aprovado_em",
       "versao", "criado_em", "atualizado_em",
@@ -340,25 +340,25 @@ Este capítulo reúne os diagramas de projeto: o diagrama de classes do domínio
       "repassado_por_id", "observacao", "versao", "criado_em", "atualizado_em",
     )),
     cls((2,1), "despesa", (
-      "id", "origem", "cooperando_id", "contrato_id", "categoria", "descricao",
+      "id", "origem", "cooperado_id", "contrato_id", "categoria", "descricao",
       "valor", "data_despesa", "criado_em", "atualizado_em",
     )),
     // herança por papel (usuario.papel)
     edge(<cliente>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
-    edge(<cooperando>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
+    edge(<cooperado>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
     // associações (multiplicidades do DER)
     ..rel-cls(<usuario>, <cliente>, "1", "1", "acessa", bend: 35deg),
-    ..rel-cls(<usuario>, <cooperando>, "1", "1", "acessa", bend: -35deg),
+    ..rel-cls(<usuario>, <cooperado>, "1", "1", "acessa", bend: -35deg),
     ..rel-cls(<cliente>, <contrato>, "1", "1..*", "contrata"),
-    ..rel-cls(<cooperando>, <contrato>, "1", "1..*", "executa"),
+    ..rel-cls(<cooperado>, <contrato>, "1", "1..*", "executa"),
     ..rel-cls(<contrato>, <pagamento>, "1", "1..*", "gera"),
-    ..rel-cls(<cooperando>, <despesa>, "0..1", "0..*", "origina"),
+    ..rel-cls(<cooperado>, <despesa>, "0..1", "0..*", "origina"),
     ..rel-cls(<contrato>, <despesa>, "0..1", "0..*", "associa"),
   ),
   caption: [Diagrama de classes do domínio: atributos, associações, multiplicidades e herança por papel. PK/FK/UK conforme o Dicionário de dados.],
 )
 
-Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN em cliente e cooperando), conforme o Dicionário de dados. A especialização é determinada pelo valor de `usuario.papel` (`ADMINISTRADOR`, `FINANCEIRO`, `MOTORISTA` ou `CLIENTE`): somente `MOTORISTA` e `CLIENTE` possuem classe de especialização (RN14).
+Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN em cliente e cooperado), conforme o Dicionário de dados. A especialização é determinada pelo valor de `usuario.papel` (`ADMINISTRADOR`, `FINANCEIRO`, `MOTORISTA` ou `CLIENTE`): somente `MOTORISTA` e `CLIENTE` possuem classe de especialização (RN14).
 
 == Diagrama de pacotes
 #figure(
@@ -403,7 +403,7 @@ Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN e
 )
 
 == Diagramas de sequência dos CRUDs
-Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperando`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
+Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperado`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
 
 #figure(
   dg(
@@ -478,7 +478,7 @@ Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a R
     edge((2,0), (2,6), "--", ..life), edge((3,0), (3,6), "--", ..life),
     seq-msg(0, 1, 1, [1\. `POST /contratos` (MOT, ADM)]),
     seq-msg(1, 2, 2, [2\. valida RN01–RN03 e RN13]),
-    seq-msg(2, 3, 3, [3\. `SELECT cooperando`,\ `cliente` e `usuario` (criador)]),
+    seq-msg(2, 3, 3, [3\. `SELECT cooperado`,\ `cliente` e `usuario` (criador)]),
     seq-msg(2, 3, 4, [4\. `INSERT contrato` (RASCUNHO)]),
     seq-msg(1, 0, 5, [5\. 201 Created], dashed: true),
   ),
@@ -494,7 +494,7 @@ Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a R
     edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
     seq-msg(0, 1, 1, [1\. `GET /contratos/{id}`]),
     seq-msg(1, 2, 2, [2\. aplica o escopo do papel (RN10)]),
-    seq-msg(2, 3, 3, [3\. `SELECT contrato` com JOIN em\ `cooperando`, `cliente` e `pagamento`]),
+    seq-msg(2, 3, 3, [3\. `SELECT contrato` com JOIN em\ `cooperado`, `cliente` e `pagamento`]),
     seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
   ),
   caption: [Sequência 6/8 — Consultar contrato (RF-CTR-09; várias tabelas).],

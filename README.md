@@ -6,17 +6,17 @@ Sistema web de apoio à gestão financeira de uma **cooperativa de transportes**
 
 ## 1. Contexto do problema e da solução
 
-A cooperativa reúne motoristas autônomos (**cooperados**) que prestam serviços de transporte a **clientes**. O contrato é firmado **entre o cliente e o cooperado**; a cooperativa não é parte dele, mas **intermedeia o fluxo financeiro**: recebe o pagamento do cliente, retém a **taxa** (percentual ou fixa, definida por contrato) e repassa o **valor líquido** ao cooperado. Contratos, aprovações, cronogramas de pagamento, baixas, repasses, despesas e relatórios eram controlados manualmente.
+A cooperativa reúne motoristas autônomos (**cooperandos**) que prestam serviços de transporte a **clientes**. O contrato é firmado **entre o cliente e o cooperando**; a cooperativa não é parte dele, mas **intermedeia o fluxo financeiro**: recebe o pagamento do cliente, retém a **taxa** (percentual ou fixa, definida por contrato) e repassa o **valor líquido** ao cooperando. Contratos, aprovações, cronogramas de pagamento, baixas, repasses, despesas e relatórios eram controlados manualmente.
 
-O sistema atende quatro perfis (administrador, financeiro, motorista/cooperado e cliente) e oferece:
+O sistema atende quatro perfis (administrador, financeiro, motorista/cooperando e cliente) e oferece:
 
 - **Autenticação** por e-mail e senha, sessão por _cookie_ e autorização por papel (RF-AUT-01 a 03);
 - **CRUD de usuários** — operação sobre uma tabela (RF-USR-01 a 04);
-- **Cadastro de cooperados e clientes**, cada um com seu usuário de acesso vinculado em transação única (RF-COO-01 a 04; RF-CLI-01 a 04);
+- **Cadastro de cooperandos e clientes**, cada um com seu usuário de acesso vinculado em transação única (RF-COO-01 a 04; RF-CLI-01 a 04);
 - **Contratos** com ciclo de aprovação (RASCUNHO → PENDENTE_APROVACAO → ATIVO → ENCERRADO/CANCELADO) e geração automática do cronograma — operação sobre quatro tabelas relacionadas (RF-CTR-01 a 10);
 - **Pagamentos** com baixa, repasse e estorno (RF-PAG-01 a 05);
-- **Despesas** da cooperativa e dos cooperados, com totalização (RF-DSP-01 a 05);
-- **Relatórios**: extrato do cooperado, resumo financeiro, inadimplência e painéis por perfil (RF-REL-01 a 04);
+- **Despesas** da cooperativa e dos cooperandos, com totalização (RF-DSP-01 a 05);
+- **Relatórios**: extrato do cooperando, resumo financeiro, inadimplência e painéis por perfil (RF-REL-01 a 04);
 - **Interface web** por perfil (RF-WEB-01 a 11) — protótipo navegável em https://gcc188-cooperativa.github.io/gcc188-docs/.
 
 A lista completa (≈50 RF, 21 RNF e 15 regras de negócio) está no [documento de requisitos](Requisitos/Levantamento%20de%20Requisitos.pdf).

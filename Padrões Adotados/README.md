@@ -19,3 +19,4 @@
 | Conventional Commits `tipo(escopo): descrição (RF-xxx-NN)`, política de ramos e proteções | *Design*, cap. 3 |
 | Arquitetura em camadas e regras ArchUnit (A1–A6) | *Design*, cap. 5.2 |
 | Banco de dados: migrações versionadas e imutáveis (Flyway) | *Design*, cap. 6 |
+| Regras de codificação RC01–RC06 (notação, documentação, formatação, SOLID, Clean Code e regras de domínio) | *Design*, cap. 17 |

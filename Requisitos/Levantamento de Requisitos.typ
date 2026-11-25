@@ -873,6 +873,25 @@ O modelo segue a abordagem entidade-relacionamento e o mapeamento relacional des
   caption: [Sequência: da elaboração do contrato ao repasse (as chamadas partem da interface web e cada passo valida papel, escopo e estado).],
 )
 
+Este fluxo é replicado no documento de Design entre os oito diagramas de sequência da Sprint 2 (RF-CTR-01 a RF-CTR-10).
+
+#figure(
+  table(
+    columns: (auto, 1fr),
+    fill: head-fill, align: left,
+    table.header[*RF*][*Diagrama*],
+    [`RF-USR-01`], [1/8],
+    [`RF-USR-02`], [2/8],
+    [`RF-USR-03`], [3/8],
+    [`RF-USR-04`], [4/8],
+    [`RF-CTR-01`], [5/8],
+    [`RF-CTR-09`], [6/8],
+    [`RF-CTR-02`], [7/8],
+    [`RF-CTR-10`], [8/8],
+  ),
+  caption: [Rastreabilidade RF → diagrama de sequência],
+)
+
 == Mapa de navegação da interface web
 #block(sticky: true)[O mapa mostra a estrutura de telas e o acesso por papel. Telas de listagem seguem o mesmo padrão (RF-WEB-03), e as de cadastro usam um formulário comum de criação e edição (RF-WEB-04).]
 #figure(

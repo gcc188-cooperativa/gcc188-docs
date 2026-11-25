@@ -49,6 +49,8 @@
   set par(justify: false, first-line-indent: 0pt, leading: 0.55em)
   text(size: 8pt, hyphenate: false, diagram(..nstyle, ..args))
 }
+#let seq-msg(x1, x2, y, body, dashed: false) = edge((x1, y), (x2, y), if dashed { "--|>" } else { "-|>" }, label: text(size: 6.8pt, body), label-side: left, label-sep: 2pt)
+#let life = (stroke: 0.5pt + luma(150))
 #let head-fill = (_, y) => if y == 0 { soft }
 
 // Quadro padrão: legenda, colunas e células (a primeira linha é o cabeçalho).
@@ -283,6 +285,250 @@ O quadro resume as decisões; as justificativas detalhadas estão nos capítulos
   [`D40`], [—], [Arredondamento `HALF_UP` com escala 2 (RN03, RN05); "hoje" calculado no fuso `America/Sao_Paulo` com `Clock` injetado.], [`HALF_EVEN`.],
   [`D41`], [—], [Eventos de domínio síncronos entre módulos (aprovação e cancelamento) e portas para consultas (encerramento).], [Chamadas diretas entre serviços.],
   [`D42`], [—], [Caddy como proxy reverso.], [Traefik; Nginx com certbot.],
+)
+
+// ───────────────────────── Modelo de domínio e diagramas de projeto ─────────────────────────
+= Modelo de domínio e diagramas de projeto <sec-diagramas-projeto>
+
+Este capítulo reúne os diagramas de projeto: o diagrama de classes do domínio, o diagrama de pacotes e os diagramas de sequência dos CRUDs exigidos pela disciplina. Os atributos e as multiplicidades vêm do Dicionário de dados e do DER da especificação, complementados pelas colunas acrescentadas em @sec-fisico.
+
+== Diagrama de classes do domínio
+#let cls(pos, nome, atributos, largura: 3.6cm) = node(
+  pos,
+  [
+    #text(size: 8pt, weight: "bold")[#nome]
+    #linebreak()
+    #block(stroke: 0.4pt + luma(170), inset: 3pt, width: 100%)[
+      #show raw: set text(size: 6.2pt)
+      #text(size: 6.2pt)[
+        #for a in atributos { raw(a); linebreak() }
+      ]
+    ]
+  ],
+  shape: fletcher.shapes.rect, stroke: 0.7pt, width: largura, name: label(nome),
+)
+#let rel-cls(a, b, ca, cb, lbl, ..opts) = (
+  edge(a, b, "-", stroke: 0.8pt, label: text(size: 7pt, style: "italic", lbl), label-fill: true, ..opts),
+  edge(a, b, "-", stroke: none, label: text(size: 7.5pt, weight: "bold", ca), label-pos: 0.1, label-side: left, label-sep: 3pt, ..opts),
+  edge(a, b, "-", stroke: none, label: text(size: 7.5pt, weight: "bold", cb), label-pos: 0.9, label-side: left, label-sep: 3pt, ..opts),
+)
+
+#figure(
+  dg(
+    spacing: (1.5cm, 0.9cm),
+    cls((1,0), "usuario", (
+      "id", "nome", "email", "senha_hash", "papel", "ativo", "deve_trocar_senha",
+      "falhas_login", "bloqueado_ate", "versao", "criado_em", "atualizado_em",
+    )),
+    cls((0,0), "cliente", (
+      "id", "usuario_id", "nome", "documento", "telefone", "email_contato",
+      "ativo", "criado_em", "atualizado_em",
+    )),
+    cls((2,0), "cooperando", (
+      "id", "usuario_id", "matricula", "nome", "cpf", "telefone", "data_ingresso",
+      "ativo", "criado_em", "atualizado_em",
+    )),
+    cls((1,1), "contrato", (
+      "id", "cooperando_id", "cliente_id", "descricao", "valor_total", "modalidade",
+      "num_parcelas", "dia_vencimento", "data_inicio", "data_fim", "taxa_tipo", "taxa_valor",
+      "status", "motivo_reprovacao", "criado_por_id", "aprovado_por_id", "aprovado_em",
+      "versao", "criado_em", "atualizado_em",
+    )),
+    cls((1,2), "pagamento", (
+      "id", "contrato_id", "numero_parcela", "data_vencimento", "valor_bruto",
+      "valor_taxa", "valor_liquido", "status", "data_baixa", "baixado_por_id", "data_repasse",
+      "repassado_por_id", "observacao", "versao", "criado_em", "atualizado_em",
+    )),
+    cls((2,1), "despesa", (
+      "id", "origem", "cooperando_id", "contrato_id", "categoria", "descricao",
+      "valor", "data_despesa", "criado_em", "atualizado_em",
+    )),
+    // herança por papel (usuario.papel)
+    edge(<cliente>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
+    edge(<cooperando>, <usuario>, "--|>", label: text(size: 7pt, style: "italic")[herança], label-side: left, label-sep: 3pt),
+    // associações (multiplicidades do DER)
+    ..rel-cls(<usuario>, <cliente>, "1", "1", "acessa", bend: 35deg),
+    ..rel-cls(<usuario>, <cooperando>, "1", "1", "acessa", bend: -35deg),
+    ..rel-cls(<cliente>, <contrato>, "1", "1..*", "contrata"),
+    ..rel-cls(<cooperando>, <contrato>, "1", "1..*", "executa"),
+    ..rel-cls(<contrato>, <pagamento>, "1", "1..*", "gera"),
+    ..rel-cls(<cooperando>, <despesa>, "0..1", "0..*", "origina"),
+    ..rel-cls(<contrato>, <despesa>, "0..1", "0..*", "associa"),
+  ),
+  caption: [Diagrama de classes do domínio: atributos, associações, multiplicidades e herança por papel. PK/FK/UK conforme o Dicionário de dados.],
+)
+
+Herança de domínio; fisicamente implementada como FK 1:1 (`usuario_id` UK/NN em cliente e cooperando), conforme o Dicionário de dados. A especialização é determinada pelo valor de `usuario.papel` (`ADMINISTRADOR`, `FINANCEIRO`, `MOTORISTA` ou `CLIENTE`): somente `MOTORISTA` e `CLIENTE` possuem classe de especialização (RN14).
+
+== Diagrama de pacotes
+#figure(
+  dg(
+    spacing: (1.9cm, 0.45cm),
+    // front
+    node((0,0), [*front*], name: <pk-fe>, width: 2.2cm, fill: soft),
+    node((0,1), [`app/`], name: <fe-app>, width: 2.2cm),
+    node((0,2), [`features/`], name: <fe-fea>, width: 2.2cm),
+    node((0,3), [`shared/`], name: <fe-shr>, width: 2.2cm),
+    node((0,4), [`mocks/`], name: <fe-mck>, width: 2.2cm),
+    node(enclose: (<pk-fe>, <fe-app>, <fe-fea>, <fe-shr>, <fe-mck>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // contrato
+    node((1,0), [*api-contract*], name: <pk-ct>, width: 2.2cm, fill: soft),
+    node((1,1), [`openapi/`], name: <ct-oas>, width: 2.2cm),
+    node((1,2), [`ts/`], name: <ct-ts>, width: 2.2cm),
+    node((1,3), [`java/`], name: <ct-jv>, width: 2.2cm),
+    node(enclose: (<pk-ct>, <ct-oas>, <ct-ts>, <ct-jv>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // backend
+    node((2,0), [*backend*], name: <pk-be>, width: 2.2cm, fill: soft),
+    node((2,1), [`web/`], name: <be-web>, width: 2.2cm),
+    node((2,2), [`service/`], name: <be-svc>, width: 2.2cm),
+    node((2,3), [`persistence/`], name: <be-per>, width: 2.2cm),
+    node((2,4), [`shared/`], name: <be-shr>, width: 2.2cm),
+    node(enclose: (<pk-be>, <be-web>, <be-svc>, <be-per>, <be-shr>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // infra
+    node((3,0), [*infra*], name: <pk-in>, width: 2.2cm, fill: soft),
+    node((3,1), [`compose.yaml`], name: <in-cmp>, width: 2.2cm),
+    node((3,2), [`caddy/`], name: <in-cad>, width: 2.2cm),
+    node((3,3), [`backup/`], name: <in-bkp>, width: 2.2cm),
+    node((3,4), [`observability/`], name: <in-obs>, width: 2.2cm),
+    node(enclose: (<pk-in>, <in-cmp>, <in-cad>, <in-bkp>, <in-obs>), stroke: 0.7pt + luma(90), inset: 8pt, snap: false, fill: luma(250)),
+    // dependências entre pacotes
+    edge(<pk-fe>, <pk-ct>, "--|>", label: text(size: 6.8pt)[consome\ contrato], label-side: left, label-sep: 3pt),
+    edge(<pk-be>, <pk-ct>, "--|>", label: text(size: 6.8pt)[implementa], label-side: right, label-sep: 3pt),
+    edge(<pk-be>, <pk-in>, "--|>", label: text(size: 6.8pt)[artefato\ implantado], label-side: left, label-sep: 3pt),
+    // dependências internas do backend
+    edge(<be-web>, <be-svc>, "-|>"),
+    edge(<be-svc>, <be-per>, "-|>"),
+  ),
+  caption: [Diagrama de pacotes: pastas do front, do backend, do contrato e da infraestrutura, com as dependências entre elas (regras A1 a A6).],
+)
+
+== Diagramas de sequência dos CRUDs
+Os oito diagramas a seguir cobrem o CRUD de uma tabela (`usuario`, RF-USR-01 a RF-USR-04) e o CRUD que relaciona três ou mais tabelas (`contrato`, com `cooperando`, `cliente`, `usuario` e `pagamento`). Cada passo valida papel, escopo e estado (RN10, RN12). O diagrama de login e renovação de _token_ aparece em @sec-auth.
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `POST /usuarios` (ADM)]),
+    seq-msg(1, 2, 2, [2\. valida `uq_usuario_email` e papel]),
+    seq-msg(2, 3, 3, [3\. `INSERT usuario`]),
+    seq-msg(1, 0, 4, [4\. 201 Created], dashed: true),
+  ),
+  caption: [Sequência 1/8 — Cadastrar usuário (RF-USR-01; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,9), "--", ..life), edge((1,0), (1,9), "--", ..life),
+    edge((2,0), (2,9), "--", ..life), edge((3,0), (3,9), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `GET /usuarios` (ADM)]),
+    seq-msg(1, 2, 2, [2\. filtros papel e ativo; paginação]),
+    seq-msg(2, 3, 3, [3\. `SELECT usuario` (paginado)]),
+    seq-msg(1, 0, 4, [4\. 200 OK (lista)], dashed: true),
+    seq-msg(0, 1, 5, [5\. `GET /usuarios/{id}` (ADM)]),
+    seq-msg(1, 2, 6, [6\. consulta por identificador]),
+    seq-msg(2, 3, 7, [7\. `SELECT usuario` por `id`]),
+    seq-msg(1, 0, 8, [8\. 200 OK (usuário)], dashed: true),
+  ),
+  caption: [Sequência 2/8 — Consultar usuários (RF-USR-02; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `PUT /usuarios/{id}` (ADM)]),
+    seq-msg(1, 2, 2, [2\. valida dados e papel (RN14)]),
+    seq-msg(2, 3, 3, [3\. `UPDATE usuario` com `versao`]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 3/8 — Alterar usuário (RF-USR-03; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 0.8cm),
+    node((0,0), [*Navegador (SPA)*], width: 2.8cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `PATCH /usuarios/{id}/situacao` (ADM)]),
+    seq-msg(1, 2, 2, [2\. inativa o usuário (RN11)]),
+    seq-msg(2, 3, 3, [3\. `UPDATE usuario` (`ativo` = falso)]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 4/8 — Excluir usuário, inativação lógica (RF-USR-04; uma tabela).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Motorista/Administrador*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,6), "--", ..life), edge((1,0), (1,6), "--", ..life),
+    edge((2,0), (2,6), "--", ..life), edge((3,0), (3,6), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `POST /contratos` (MOT, ADM)]),
+    seq-msg(1, 2, 2, [2\. valida RN01–RN03 e RN13]),
+    seq-msg(2, 3, 3, [3\. `SELECT cooperando`,\ `cliente` e `usuario` (criador)]),
+    seq-msg(2, 3, 4, [4\. `INSERT contrato` (RASCUNHO)]),
+    seq-msg(1, 0, 5, [5\. 201 Created], dashed: true),
+  ),
+  caption: [Sequência 5/8 — Criar contrato (RF-CTR-01; várias tabelas).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Navegador (SPA)*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `GET /contratos/{id}`]),
+    seq-msg(1, 2, 2, [2\. aplica o escopo do papel (RN10)]),
+    seq-msg(2, 3, 3, [3\. `SELECT contrato` com JOIN em\ `cooperando`, `cliente` e `pagamento`]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 6/8 — Consultar contrato (RF-CTR-09; várias tabelas).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Motorista/Administrador*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,5), "--", ..life), edge((1,0), (1,5), "--", ..life),
+    edge((2,0), (2,5), "--", ..life), edge((3,0), (3,5), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `PUT /contratos/{id}` (MOT, ADM)]),
+    seq-msg(1, 2, 2, [2\. só em RASCUNHO (RN12)]),
+    seq-msg(2, 3, 3, [3\. `UPDATE contrato`, grava\ `versao` e `atualizado_em`]),
+    seq-msg(1, 0, 4, [4\. 200 OK], dashed: true),
+  ),
+  caption: [Sequência 7/8 — Alterar contrato (RF-CTR-02; várias tabelas).],
+)
+
+#figure(
+  dg(
+    spacing: (2.0cm, 1.0cm),
+    node((0,0), [*Motorista/Administrador*], width: 3.4cm), node((1,0), [*API*], width: 1.8cm),
+    node((2,0), [*Service*], width: 1.8cm), node((3,0), [*Banco*], width: 1.8cm),
+    edge((0,0), (0,6), "--", ..life), edge((1,0), (1,6), "--", ..life),
+    edge((2,0), (2,6), "--", ..life), edge((3,0), (3,6), "--", ..life),
+    seq-msg(0, 1, 1, [1\. `DELETE /contratos/{id}` (MOT, ADM)]),
+    seq-msg(1, 2, 2, [2\. só em RASCUNHO (RN11, RN12)]),
+    seq-msg(2, 3, 3, [3\. `SELECT pagamento` (ausência)]),
+    seq-msg(2, 3, 4, [4\. `DELETE contrato`]),
+    seq-msg(1, 0, 5, [5\. 204 No Content], dashed: true),
+  ),
+  caption: [Sequência 8/8 — Excluir contrato (RF-CTR-10; várias tabelas).],
 )
 
 // ───────────────────────── 3. Repositórios e processo ─────────────────────────
@@ -750,8 +996,6 @@ A autenticação é própria, com Spring Security (D21), e reaproveita bibliotec
 
 O prefixo `__Host-` não é usado porque exige `Path=/`, o que impediria restringir o caminho dos _cookies_ de _token_. Como o front e a API compartilham a origem (D28), não há CORS e `SameSite=Strict` funciona sem exceções.
 
-#let seq-msg(x1, x2, y, body, dashed: false) = edge((x1, y), (x2, y), if dashed { "--|>" } else { "-|>" }, label: text(size: 6.8pt, body), label-side: left, label-sep: 2pt)
-#let life = (stroke: 0.5pt + luma(150))
 #figure(
   dg(
     spacing: (2.6cm, 0.85cm),
@@ -938,6 +1182,25 @@ O estilo `'unsafe-inline'` é necessário apenas para estilos, porque o React ap
   [Versões do protocolo], [TLS 1.2 ou superior.], [TLS 1.2 ou superior (padrão do Caddy).],
 )
 
+#figure(
+  dg(
+    spacing: (1.6cm, 1.0cm),
+    node((0,0), [*Navegador*], name: <cli>, width: 2.2cm),
+    node((1,0), [*Caddy*\ TLS 443], name: <prox>, width: 2.6cm),
+    node((2,0), [*Nginx*\ (arquivos estáticos)], name: <web>, width: 2.8cm),
+    node((2,1), [*Spring Boot*\ `/api/v1`], name: <api>, width: 2.8cm),
+    node((3,1), [*PostgreSQL*], name: <pg>, shape: fletcher.shapes.cylinder, width: 2.2cm),
+    node((3,2), [*backup*\ `pg_dump`], name: <bk>, width: 2.6cm),
+    node(enclose: (<prox>, <web>, <api>, <pg>, <bk>), stroke: 0.7pt + luma(90), inset: 10pt, snap: false, fill: luma(250)),
+    edge(<cli>, <prox>, "<|-|>", label: [HTTPS], label-side: left),
+    edge(<prox>, <web>, "-|>", label: [`/`], label-side: left),
+    edge(<prox>, <api>, "-|>", label: [`/api/*`], label-side: right),
+    edge(<api>, <pg>, "<|-|>", label: [JDBC], label-side: left),
+    edge(<bk>, <pg>, "-|>", label: [dump], label-side: right),
+  ),
+  caption: [Diagrama de implantação: nós de execução, artefatos alocados e protocolos no host Docker (D28, D29).],
+)
+
 == Segredos e configuração <sec-segredos>
 - *Desenvolvimento:* `scripts/init-env.sh` gera `.env` e os arquivos de _secrets_ com valores aleatórios (`openssl rand`); ambos estão no `.gitignore`.
 - *Produção:* arquivos de _secrets_ com permissão 0400, montados pelo mecanismo `secrets` do Compose em `/run/secrets/` (D31). O backend os lê por `configtree`.
@@ -1120,6 +1383,21 @@ As premissas abaixo foram adotadas para permitir o design e devem ser confirmada
 )
 
 *Gestão de mudanças.* Vale o fluxo da especificação: solicitação registrada, análise de impacto (agora incluindo contrato, backend, front e infraestrutura), aprovação e atualização por PR em ramo `docs/*`.
+
+// ───────────────────────── 16. Regras de codificação ─────────────────────────
+= Regras de codificação <sec-rc>
+
+#quadro([Regras de codificação adotadas.], (auto, 1fr, 1fr),
+  table.header[*ID*][*Regra*][*Verificação*],
+  [`RC01`], [Notação: TS/React usa PascalCase para componentes e tipos, camelCase para funções e variáveis e kebab-case para arquivos; Java usa PascalCase para classes e camelCase para métodos; SQL usa `snake_case`.], [Revisão de PR + ESLint.],
+  [`RC02`], [Documentação e comentários: toda função exportada em TS tem JSDoc com `@param` e `@returns`; todo método público Java tem Javadoc; comentários só explicam regra de negócio não óbvia.], [Revisão de PR.],
+  [`RC03`], [Formatação: um formatador por repositório, executado antes do _commit_; 2 espaços em TS, 4 em Java; fins de linha LF.], [Hook local + CI.],
+  [`RC04`], [SOLID: uma responsabilidade por classe ou módulo; dependências por abstração (portas em `service`); regras A1 a A6 verificadas por ArchUnit.], [ArquiteturaTest.],
+  [`RC05`], [Clean Code: funções curtas, nomes que descrevem a ação, sem `any` em TS, sem parâmetros booleanos, limites de complexidade, de parâmetros e de linhas.], [ESLint.],
+  [`RC06`], [Regras de domínio: RN01 a RN14 ficam em `service` ou no domínio, nunca no controlador; operações com 3 ou mais tabelas são atômicas; o estado do contrato só muda pela máquina de estados RN12.], [Testes de integração.],
+)
+
+A verificação A7 destas regras é registrada em PR; onde o ferramental ainda não existe, a regra figura como pendência, não como item concluído.
 
 // ───────────────────────── Referências ─────────────────────────
 #heading(numbering: none)[Referências]
